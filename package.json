@@ -6,10 +6,24 @@
   "bin": {
     "promptwiki": "./dist/index.js"
   },
+  "files": [
+    "dist"
+  ],
+  "keywords": ["promptwiki", "cli", "prompt", "ai", "wiki"],
+  "homepage": "https://pmptwiki.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/promptwiki/cli.git"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "@clack/prompts": "^0.7.0",
