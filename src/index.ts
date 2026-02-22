@@ -7,17 +7,19 @@ import { cmdInit } from './commands/init.js';
 import { cmdStatus } from './commands/status.js';
 import { cmdHistory } from './commands/hist.js';
 import { cmdWatch } from './commands/watch.js';
+import { cmdPlan } from './commands/plan.js';
 
 const program = new Command();
 
 program
   .name('pmpt')
   .description('PromptWiki CLI — AI와 제품을 만드는 과정을 기록하고 공유합니다')
-  .version('0.3.0')
+  .version('0.4.0')
   .addHelpText('after', `
 Examples:
   $ pmpt init                    프로젝트 초기화
   $ pmpt init --repo <url>       Git 저장소와 연동하여 초기화
+  $ pmpt plan                    제품 개발 플랜 모드 시작
   $ pmpt watch                   파일 변경 감지 시작
   $ pmpt status                  프로젝트 상태 확인
   $ pmpt history                 버전 히스토리 보기
@@ -49,6 +51,13 @@ program
   .command('history [path]')
   .description('저장된 버전 히스토리를 확인합니다')
   .action(cmdHistory);
+
+program
+  .command('plan [path]')
+  .description('제품 개발 플랜 모드 — 단계별로 스펙 문서를 생성합니다')
+  .option('-p, --phase <number>', '특정 phase로 이동')
+  .option('--reset', '플랜 진행 상태 초기화')
+  .action(cmdPlan);
 
 // Contribution commands
 program

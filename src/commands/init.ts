@@ -3,9 +3,11 @@ import { existsSync } from 'fs';
 import { resolve } from 'path';
 import { initializeProject, isInitialized } from '../lib/config.js';
 import { isGitRepo, getGitInfo, formatGitInfo } from '../lib/git.js';
+import { cmdPlan } from './plan.js';
 
 interface InitOptions {
   repo?: string;
+  guide?: boolean;
 }
 
 export async function cmdInit(path?: string, options?: InitOptions): Promise<void> {
@@ -122,13 +124,25 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
     }
 
     notes.push('', '다음 명령어로 시작하세요:');
+    notes.push('  pmpt plan     # 제품 개발 플랜 모드 시작');
     notes.push('  pmpt watch    # 파일 변경 자동 추적 시작');
     notes.push('  pmpt status   # 추적 중인 파일 확인');
     notes.push('  pmpt history  # 버전 히스토리 보기');
 
     p.note(notes.join('\n'), '프로젝트 정보');
 
-    p.outro('PromptWiki 프로젝트가 초기화되었습니다');
+    // 플랜 모드 시작 여부 확인
+    const startPlan = await p.confirm({
+      message: '플랜 모드를 시작하시겠습니까? (처음이라면 추천!)',
+      initialValue: true,
+    });
+
+    if (!p.isCancel(startPlan) && startPlan) {
+      p.log.message('');
+      await cmdPlan(projectPath);
+    } else {
+      p.outro('PromptWiki 프로젝트가 초기화되었습니다');
+    }
   } catch (error) {
     s.stop('초기화 실패');
     p.log.error((error as Error).message);
