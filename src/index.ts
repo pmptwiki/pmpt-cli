@@ -11,9 +11,22 @@ import { cmdWatch } from './commands/watch.js';
 const program = new Command();
 
 program
-  .name('promptwiki')
-  .description('PromptWiki — AI 대화 히스토리 추적 & 기여 도구')
-  .version('0.1.0');
+  .name('pmpt')
+  .description('PromptWiki CLI — AI와 제품을 만드는 과정을 기록하고 공유합니다')
+  .version('0.3.0')
+  .addHelpText('after', `
+Examples:
+  $ pmpt init                    프로젝트 초기화
+  $ pmpt init --repo <url>       Git 저장소와 연동하여 초기화
+  $ pmpt watch                   파일 변경 감지 시작
+  $ pmpt status                  프로젝트 상태 확인
+  $ pmpt history                 버전 히스토리 보기
+  $ pmpt submit <file>           문서를 PR로 제출
+
+Alias: promptwiki (예: promptwiki init)
+
+Documentation: https://pmptwiki.com
+`);
 
 // Project tracking commands
 program
