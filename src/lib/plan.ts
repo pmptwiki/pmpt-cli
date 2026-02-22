@@ -20,45 +20,40 @@ export interface PlanProgress {
 
 const PLAN_FILE = 'plan-progress.json';
 
-// 6 simple questions (answer in any language you prefer)
+// 5 simple questions (answer in any language you prefer)
+// This is the first step of your product journey with AI!
 export const PLAN_QUESTIONS: PlanQuestion[] = [
   {
     key: 'projectName',
-    question: 'Project name?',
+    question: 'What should we call your project?',
     placeholder: 'my-awesome-app',
     required: true,
   },
   {
-    key: 'problem',
-    question: 'What problem are you solving?',
-    placeholder: 'e.g., Developers spend too much time finding API docs',
+    key: 'productIdea',
+    question: "What would you like to build with AI? (Let's start your journey!)",
+    placeholder: 'e.g., A Chrome extension that summarizes long articles, A budget tracking app for freelancers',
     multiline: true,
     required: true,
   },
   {
-    key: 'solution',
-    question: 'How will you solve it?',
-    placeholder: 'e.g., AI analyzes code and auto-generates API docs',
+    key: 'additionalContext',
+    question: 'Any additional context AI should know? (optional)',
+    placeholder: 'e.g., I prefer simple UI, Must work offline, Target audience is students',
     multiline: true,
-    required: true,
-  },
-  {
-    key: 'targetUser',
-    question: 'Who is your target user?',
-    placeholder: 'e.g., Startup backend developers',
-    required: true,
+    required: false,
   },
   {
     key: 'coreFeatures',
-    question: 'Core features for MVP? (one per line)',
-    placeholder: 'e.g.:\nCode upload\nAI analysis\nDoc generation',
+    question: 'Key features to include? (separate with commas or semicolons)',
+    placeholder: 'e.g., User login; Dashboard; Export to PDF; Dark mode',
     multiline: true,
     required: true,
   },
   {
     key: 'techStack',
-    question: 'Preferred tech stack? (optional)',
-    placeholder: 'e.g., React, Node.js, PostgreSQL',
+    question: 'Preferred tech stack? (optional - AI can suggest if unsure)',
+    placeholder: 'e.g., React, Node.js, PostgreSQL — or "up to you"',
     multiline: false,
     required: false,
   },
@@ -66,12 +61,17 @@ export const PLAN_QUESTIONS: PlanQuestion[] = [
 
 // Generate AI prompt (language-agnostic template)
 export function generateAIPrompt(answers: Record<string, string>): string {
+  // Parse features (support comma, semicolon, or newline separators)
   const features = answers.coreFeatures
-    .split('\n')
+    .split(/[,;\n]/)
     .map((f: string) => f.trim())
     .filter((f: string) => f)
     .map((f: string) => `- ${f}`)
     .join('\n');
+
+  const contextSection = answers.additionalContext
+    ? `\n## Additional Context\n${answers.additionalContext}\n`
+    : '';
 
   const techSection = answers.techStack
     ? `\n## Tech Stack Preferences\n${answers.techStack}\n`
@@ -79,16 +79,10 @@ export function generateAIPrompt(answers: Record<string, string>): string {
 
   return `# ${answers.projectName} — Product Development Request
 
-## Problem
-${answers.problem}
-
-## Proposed Solution
-${answers.solution}
-
-## Target User
-${answers.targetUser}
-
-## MVP Core Features
+## What I Want to Build
+${answers.productIdea}
+${contextSection}
+## Key Features
 ${features}
 ${techSection}
 ---
@@ -97,14 +91,14 @@ Please help me build this product based on the requirements above.
 
 1. First, review the requirements and ask if anything is unclear.
 2. Propose a technical architecture.
-3. Outline the MVP implementation steps.
+3. Outline the implementation steps.
 4. Start coding from the first step.
 
 I'll confirm progress at each step before moving to the next.
 
 ## Documentation Rule
 
-**Important:** Update this document (located at \`.promptwiki/pmpt/pmpt.md\`) at these moments:
+**Important:** Update this document (located at \`.pmpt/docs/pmpt.md\`) at these moments:
 - When architecture or tech decisions are finalized
 - When a feature is implemented (mark as done)
 - When a development phase is completed
@@ -123,12 +117,17 @@ This keeps a living record of our development journey.
 
 // Generate plan document
 export function generatePlanDocument(answers: Record<string, string>): string {
+  // Parse features (support comma, semicolon, or newline separators)
   const features = answers.coreFeatures
-    .split('\n')
+    .split(/[,;\n]/)
     .map((f: string) => f.trim())
     .filter((f: string) => f)
     .map((f: string) => `- [ ] ${f}`)
     .join('\n');
+
+  const contextSection = answers.additionalContext
+    ? `\n## Additional Context\n${answers.additionalContext}\n`
+    : '';
 
   const techSection = answers.techStack
     ? `\n## Tech Stack\n${answers.techStack}\n`
@@ -136,20 +135,14 @@ export function generatePlanDocument(answers: Record<string, string>): string {
 
   return `# ${answers.projectName}
 
-## Problem
-${answers.problem}
-
-## Solution
-${answers.solution}
-
-## Target User
-${answers.targetUser}
-
-## MVP Features
+## Product Idea
+${answers.productIdea}
+${contextSection}
+## Features
 ${features}
 ${techSection}
 ---
-*Generated by PromptWiki Plan*
+*Generated by pmpt plan*
 `;
 }
 

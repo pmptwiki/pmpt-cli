@@ -54,7 +54,7 @@ export function cmdHistory(path?: string, options?: HistoryOptions): void {
   const snapshots = getAllSnapshots(projectPath);
 
   if (snapshots.length === 0) {
-    p.intro('PromptWiki — Version History');
+    p.intro('pmpt history');
     p.log.warn('No snapshots saved yet.');
     p.log.info('Save snapshots with pmpt save or pmpt watch.');
     p.outro('');
@@ -81,8 +81,8 @@ export function cmdHistory(path?: string, options?: HistoryOptions): void {
   }
 
   const title = options?.compact
-    ? `PromptWiki — Version History (${displaySnapshots.length} shown, ${hiddenVersions.length} hidden)`
-    : `PromptWiki — Version History (${snapshots.length} total)`;
+    ? `pmpt history (${displaySnapshots.length} shown, ${hiddenVersions.length} hidden)`
+    : `pmpt history (${snapshots.length} total)`;
 
   p.intro(title);
 

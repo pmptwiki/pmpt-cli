@@ -1,6 +1,7 @@
 import * as p from '@clack/prompts';
 import { resolve } from 'path';
 import { readFileSync } from 'fs';
+import { execSync } from 'child_process';
 import { isInitialized } from '../lib/config.js';
 import { cmdWatch } from './watch.js';
 import {
@@ -15,12 +16,34 @@ interface PlanOptions {
   reset?: boolean;
 }
 
+// Cross-platform clipboard copy
+function copyToClipboard(text: string): boolean {
+  try {
+    const platform = process.platform;
+    if (platform === 'darwin') {
+      execSync('pbcopy', { input: text });
+    } else if (platform === 'win32') {
+      execSync('clip', { input: text });
+    } else {
+      // Linux - try xclip or xsel
+      try {
+        execSync('xclip -selection clipboard', { input: text });
+      } catch {
+        execSync('xsel --clipboard --input', { input: text });
+      }
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function cmdPlan(path?: string, options?: PlanOptions): Promise<void> {
   const projectPath = path ? resolve(path) : process.cwd();
 
   // Check initialization
   if (!isInitialized(projectPath)) {
-    p.intro('PromptWiki Plan');
+    p.intro('pmpt plan');
     p.log.error('Project not initialized.');
     p.log.info('Run `pmpt init` first to initialize the project.');
     p.outro('');
@@ -45,13 +68,14 @@ export async function cmdPlan(path?: string, options?: PlanOptions): Promise<voi
 
   // If already completed
   if (progress?.completed) {
-    p.intro('PromptWiki Plan');
+    p.intro('pmpt plan');
     p.log.success('Plan already completed.');
 
     const action = await p.select({
       message: 'What would you like to do?',
       options: [
-        { value: 'view', label: 'View AI prompt', hint: 'Copy and paste to AI' },
+        { value: 'copy', label: 'Copy AI prompt to clipboard', hint: 'Ready for Ctrl+V' },
+        { value: 'view', label: 'View AI prompt', hint: 'Display in terminal' },
         { value: 'restart', label: 'Restart plan', hint: 'Start fresh' },
         { value: 'watch', label: 'Start file watching', hint: 'pmpt watch' },
         { value: 'exit', label: 'Exit' },
@@ -63,8 +87,7 @@ export async function cmdPlan(path?: string, options?: PlanOptions): Promise<voi
       process.exit(0);
     }
 
-    if (action === 'view') {
-      // Read pmpt.md from pmpt folder
+    if (action === 'copy' || action === 'view') {
       const { getPmptDir } = await import('../lib/config.js');
       const { existsSync } = await import('fs');
       const { join } = await import('path');
@@ -75,12 +98,26 @@ export async function cmdPlan(path?: string, options?: PlanOptions): Promise<voi
         if (existsSync(promptPath)) {
           const content = readFileSync(promptPath, 'utf-8');
 
+          if (action === 'copy') {
+            const copied = copyToClipboard(content);
+            if (copied) {
+              p.log.success('AI prompt copied to clipboard!');
+              p.log.message('');
+              p.log.step('Now open Claude, ChatGPT, or Codex and press Ctrl+V (Cmd+V on Mac)');
+              p.log.message('Your product journey starts now!');
+            } else {
+              p.log.warn('Could not copy to clipboard. Showing content instead:');
+              p.log.message('');
+              console.log(content);
+            }
+          } else {
+            p.log.message('');
+            p.log.info('=== AI Prompt ===');
+            p.log.message('');
+            console.log(content);
+          }
           p.log.message('');
-          p.log.info('=== AI Prompt (copy the content below) ===');
-          p.log.message('');
-          console.log(content);
-          p.log.message('');
-          p.log.info(`File location: ${promptPath}`);
+          p.log.info(`File: ${promptPath}`);
         } else {
           p.log.error('AI prompt file not found.');
         }
@@ -108,8 +145,8 @@ export async function cmdPlan(path?: string, options?: PlanOptions): Promise<voi
     progress = initPlanProgress(projectPath);
   }
 
-  p.intro('PromptWiki Plan — Quick Product Planning');
-  p.log.info('Answer 6 questions to generate an AI-ready prompt.');
+  p.intro('pmpt plan — Your Product Journey Starts Here!');
+  p.log.info(`Answer ${PLAN_QUESTIONS.length} quick questions to generate your AI prompt.`);
   p.log.message('You can answer in any language you prefer.');
   p.log.message('');
 
@@ -138,7 +175,7 @@ export async function cmdPlan(path?: string, options?: PlanOptions): Promise<voi
 
   // Generate documents
   const s = p.spinner();
-  s.start('Generating documents...');
+  s.start('Generating your AI prompt...');
 
   const { planPath, promptPath } = savePlanDocuments(projectPath, answers);
 
@@ -149,39 +186,49 @@ export async function cmdPlan(path?: string, options?: PlanOptions): Promise<voi
 
   s.stop('Done!');
 
-  // Show results
+  // Show document explanation
   p.log.message('');
-  p.log.success('Plan completed!');
-  p.log.message('');
-  p.log.info(`Plan document: ${planPath}`);
-  p.log.info(`AI prompt: ${promptPath}`);
+  p.log.success('Two documents have been created:');
   p.log.message('');
 
-  // Preview AI prompt
-  const showPrompt = await p.confirm({
-    message: 'View AI prompt now?',
-    initialValue: true,
-  });
+  const docExplanation = [
+    `1. plan.md — Your product overview`,
+    `   • Features checklist to track progress`,
+    `   • Reference for you`,
+    `   Location: ${planPath}`,
+    '',
+    `2. pmpt.md — AI prompt (THE IMPORTANT ONE!)`,
+    `   • Copy this to Claude/ChatGPT/Codex`,
+    `   • AI will help you build step by step`,
+    `   • AI will update this doc as you progress`,
+    `   Location: ${promptPath}`,
+  ];
 
-  if (!p.isCancel(showPrompt) && showPrompt) {
-    const content = readFileSync(promptPath, 'utf-8');
+  p.note(docExplanation.join('\n'), 'What are these files?');
+
+  // Copy to clipboard
+  const content = readFileSync(promptPath, 'utf-8');
+  const copied = copyToClipboard(content);
+
+  if (copied) {
     p.log.message('');
-    p.log.info('=== AI Prompt (copy the content below) ===');
+    p.log.success('AI prompt copied to clipboard!');
+    p.log.message('');
+    p.log.step('Open Claude, ChatGPT, or Codex and press Ctrl+V (Cmd+V on Mac)');
+    p.log.message('Your product journey starts now!');
+    p.log.message('');
+  } else {
+    // Fallback: show prompt
+    p.log.message('');
+    p.log.info('=== AI Prompt (copy this to AI) ===');
     p.log.message('');
     console.log(content);
     p.log.message('');
   }
 
-  // Next steps
-  p.log.message('');
-  p.log.step('Next steps:');
-  p.log.message('1. Copy the AI prompt above and paste to Claude/ChatGPT');
-  p.log.message('2. Build your product with AI');
-  p.log.message('3. Save snapshots with pmpt save (or pmpt watch for auto-save)');
-  p.log.message('');
-
+  // Ask about watch mode
   const startWatch = await p.confirm({
-    message: 'Start file watching? (pmpt watch)',
+    message: 'Start file watching? (auto-save versions as you work)',
     initialValue: false,
   });
 
@@ -189,7 +236,11 @@ export async function cmdPlan(path?: string, options?: PlanOptions): Promise<voi
     p.log.message('');
     await cmdWatch(projectPath);
   } else {
-    p.log.info('Start watching later with `pmpt watch`');
-    p.outro('Good luck!');
+    p.log.message('');
+    p.log.info('Tips:');
+    p.log.message('  pmpt save     — Save a snapshot anytime');
+    p.log.message('  pmpt watch    — Auto-save on file changes');
+    p.log.message('  pmpt history  — View version history');
+    p.outro('Good luck with your build!');
   }
 }

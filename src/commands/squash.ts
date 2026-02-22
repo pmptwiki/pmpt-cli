@@ -41,7 +41,7 @@ export async function cmdSquash(from: string, to: string, path?: string): Promis
     process.exit(1);
   }
 
-  p.intro('PromptWiki — Squash Versions');
+  p.intro('pmpt squash');
 
   p.log.info(`Squashing v${fromVersion} through v${toVersion} (${toSquash.length} versions)`);
 

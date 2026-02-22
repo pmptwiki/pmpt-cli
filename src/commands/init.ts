@@ -1,7 +1,7 @@
 import * as p from '@clack/prompts';
 import { existsSync } from 'fs';
 import { resolve } from 'path';
-import { initializeProject, isInitialized } from '../lib/config.js';
+import { initializeProject, isInitialized, detectExistingFolders } from '../lib/config.js';
 import { isGitRepo, getGitInfo, formatGitInfo } from '../lib/git.js';
 import { cmdPlan } from './plan.js';
 
@@ -11,7 +11,7 @@ interface InitOptions {
 }
 
 export async function cmdInit(path?: string, options?: InitOptions): Promise<void> {
-  p.intro('PromptWiki — Project Initialization');
+  p.intro('pmpt init');
 
   const projectPath = path ? resolve(path) : process.cwd();
 
@@ -37,17 +37,81 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
     }
   }
 
+  // Detect existing AI tool folders
+  const existingFolders = detectExistingFolders(projectPath);
+  let selectedDocsPath: string | undefined;
+
+  if (existingFolders.length > 0) {
+    p.log.info('Found existing folders that might contain your AI prompts/docs:');
+    for (const folder of existingFolders) {
+      p.log.message(`  • ${folder}/`);
+    }
+    p.log.message('');
+
+    const folderOptions = [
+      ...existingFolders.map(folder => ({
+        value: folder,
+        label: `Use ${folder}/`,
+        hint: 'Track existing files',
+      })),
+      {
+        value: '__new__',
+        label: 'Create new folder',
+        hint: '.pmpt/docs/ (default)',
+      },
+      {
+        value: '__custom__',
+        label: 'Enter custom path',
+        hint: 'Specify your own folder',
+      },
+    ];
+
+    const folderChoice = await p.select({
+      message: 'Which folder should pmpt track?',
+      options: folderOptions,
+    });
+
+    if (p.isCancel(folderChoice)) {
+      p.cancel('Cancelled');
+      process.exit(0);
+    }
+
+    if (folderChoice === '__custom__') {
+      const customPath = await p.text({
+        message: 'Enter the folder path to track',
+        placeholder: 'e.g., my-prompts, specs/ai',
+        validate: (value) => {
+          if (!value) return 'Please enter a folder path';
+          return undefined;
+        },
+      });
+
+      if (p.isCancel(customPath)) {
+        p.cancel('Cancelled');
+        process.exit(0);
+      }
+
+      selectedDocsPath = customPath as string;
+    } else if (folderChoice !== '__new__') {
+      selectedDocsPath = folderChoice as string;
+    }
+    // If __new__, selectedDocsPath remains undefined (will use default)
+  }
+
   // Build confirmation message
   const confirmMessage = [
-    `Track AI conversation history in this folder?`,
+    `Initialize pmpt in this folder?`,
     `  Path: ${projectPath}`,
   ];
 
+  if (selectedDocsPath) {
+    confirmMessage.push(`  Docs: ${selectedDocsPath}/`);
+  } else {
+    confirmMessage.push(`  Docs: .pmpt/docs/ (new)`);
+  }
+
   if (isGit && gitInfo) {
     confirmMessage.push(`  Git: ${formatGitInfo(gitInfo)}`);
-    if (repoUrl) {
-      confirmMessage.push(`  Repository: ${repoUrl}`);
-    }
   }
 
   const confirm = await p.confirm({
@@ -62,18 +126,11 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
 
   // If Git repo but no repoUrl, suggest connecting
   if (isGit && !repoUrl) {
-    p.log.info(`Tip: Connect a GitHub repo with --repo for more features!`);
-    p.log.message(`   • Auto-record commit hash for each version`);
-    p.log.message(`   • Create PRs directly with pmpt submit`);
-    p.log.message(`   • Others can reproduce exact code states`);
-    p.log.message('');
-
     const repoChoice = await p.select({
-      message: 'Connect GitHub repository?',
+      message: 'Connect GitHub repository? (optional)',
       options: [
+        { value: 'skip', label: 'Skip for now', hint: 'Recommended' },
         { value: 'now', label: 'Connect now', hint: 'Enter repository URL' },
-        { value: 'later', label: 'Connect later', hint: 'Re-run with pmpt init --repo <url>' },
-        { value: 'skip', label: 'Skip', hint: 'Use Git tracking only' },
       ],
     });
 
@@ -106,38 +163,51 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
     const config = initializeProject(projectPath, {
       repo: repoUrl,
       trackGit: isGit,
+      docsPath: selectedDocsPath,
     });
     s.stop('Initialized');
+
+    // Build folder structure display
+    const docsDisplay = selectedDocsPath || '.pmpt/docs';
+    const isExternalDocs = selectedDocsPath && !selectedDocsPath.startsWith('.pmpt');
 
     const notes = [
       `Path: ${config.projectPath}`,
       '',
       'Folder structure:',
-      '  .promptwiki/',
-      '  ├── config.json     Config file',
-      '  ├── pmpt/           Working folder (MD files)',
-      '  └── .history/       Version history',
     ];
 
+    if (isExternalDocs) {
+      notes.push(`  ${docsDisplay}/         ← Your docs (tracked)`);
+      notes.push(`  .pmpt/`);
+      notes.push(`  ├── config.json     Config`);
+      notes.push(`  └── .history/       Snapshots`);
+    } else {
+      notes.push(`  .pmpt/`);
+      notes.push(`  ├── config.json     Config`);
+      notes.push(`  ├── docs/           Your docs`);
+      notes.push(`  └── .history/       Snapshots`);
+    }
+
     if (config.repo) {
-      notes.push('', `Git repository: ${config.repo}`);
+      notes.push('', `Repository: ${config.repo}`);
     }
 
     if (config.trackGit) {
       notes.push(`Git tracking: Enabled`);
     }
 
-    notes.push('', 'Get started with:');
-    notes.push('  pmpt plan     # Start product planning');
-    notes.push('  pmpt save     # Save current state snapshot');
-    notes.push('  pmpt watch    # Auto-detect file changes');
-    notes.push('  pmpt history  # View version history');
+    notes.push('', 'Commands:');
+    notes.push('  pmpt plan     # Generate AI prompt');
+    notes.push('  pmpt save     # Save snapshot');
+    notes.push('  pmpt watch    # Auto-save on changes');
+    notes.push('  pmpt history  # View versions');
 
     p.note(notes.join('\n'), 'Project Info');
 
     // Ask to start plan mode
     const startPlan = await p.confirm({
-      message: 'Start plan mode? (Recommended for first-timers!)',
+      message: 'Start planning? (Generate AI prompt with 5 quick questions)',
       initialValue: true,
     });
 
@@ -145,7 +215,7 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
       p.log.message('');
       await cmdPlan(projectPath);
     } else {
-      p.outro('PromptWiki project initialized');
+      p.outro('Ready! Run `pmpt plan` when you want to start.');
     }
   } catch (error) {
     s.stop('Initialization failed');

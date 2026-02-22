@@ -14,7 +14,7 @@ export async function cmdSave(fileOrPath?: string): Promise<void> {
     process.exit(1);
   }
 
-  p.intro('PromptWiki — Save Snapshot');
+  p.intro('pmpt save');
 
   const pmptDir = getPmptDir(projectPath);
   const files = getTrackedFiles(projectPath);

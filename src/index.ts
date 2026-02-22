@@ -21,16 +21,16 @@ program
 Examples:
   $ pmpt init                    Initialize project
   $ pmpt plan                    Start product planning (6 questions → AI prompt)
-  $ pmpt save                    Save snapshot of pmpt folder
+  $ pmpt save                    Save snapshot of docs folder
   $ pmpt watch                   Auto-detect file changes
   $ pmpt history                 View version history
   $ pmpt history --compact       Hide minor changes
   $ pmpt squash v2 v5            Merge versions v2-v5 into v2
 
 Folder structure:
-  .promptwiki/
+  .pmpt/
   ├── config.json               Config file
-  ├── pmpt/                     Working folder (MD files)
+  ├── docs/                     Working folder (MD files)
   └── .history/                 Version history
 
 Documentation: https://pmptwiki.com
@@ -50,7 +50,7 @@ program
 
 program
   .command('save [path]')
-  .description('Save current state of pmpt folder as snapshot')
+  .description('Save current state of docs folder as snapshot')
   .action(cmdSave);
 
 program

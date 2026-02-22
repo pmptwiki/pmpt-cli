@@ -1,6 +1,6 @@
 import * as p from '@clack/prompts';
 import { resolve } from 'path';
-import { isInitialized, loadConfig, getPmptDir } from '../lib/config.js';
+import { isInitialized, loadConfig } from '../lib/config.js';
 import { getTrackedFiles, getAllSnapshots } from '../lib/history.js';
 
 export function cmdStatus(path?: string): void {
@@ -15,7 +15,7 @@ export function cmdStatus(path?: string): void {
   const tracked = getTrackedFiles(projectPath);
   const snapshots = getAllSnapshots(projectPath);
 
-  p.intro('PromptWiki — Project Status');
+  p.intro('pmpt status');
 
   const notes = [
     `Path: ${projectPath}`,
@@ -27,7 +27,7 @@ export function cmdStatus(path?: string): void {
   }
 
   notes.push('');
-  notes.push(`pmpt folder: .promptwiki/pmpt/`);
+  notes.push(`Docs folder: ${config!.docsPath}/`);
   notes.push(`Snapshots: ${snapshots.length}`);
   notes.push('');
   notes.push(`Tracked files: ${tracked.length}`);

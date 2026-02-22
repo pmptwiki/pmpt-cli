@@ -13,7 +13,7 @@ export function cmdWatch(path?: string): void {
 
   const pmptDir = getPmptDir(projectPath);
 
-  p.intro('PromptWiki — File Watcher');
+  p.intro('pmpt watch — File Watcher');
   p.log.info(`Watching: ${pmptDir}`);
   p.log.info('Auto-saving snapshots on MD file changes.');
   p.log.info('Press Ctrl+C to stop.');
@@ -32,7 +32,7 @@ export function cmdWatch(path?: string): void {
     p.log.message('');
     p.log.info('Stopping watcher...');
     watcher.close();
-    p.outro('PromptWiki watcher stopped');
+    p.outro('Watcher stopped');
     process.exit(0);
   });
 }
