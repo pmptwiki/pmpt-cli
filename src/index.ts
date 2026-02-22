@@ -18,7 +18,7 @@ const program = new Command();
 program
   .name('pmpt')
   .description('pmpt — Record and share your AI-driven product development journey')
-  .version('1.0.0')
+  .version('1.3.0')
   .addHelpText('after', `
 Examples:
   $ pmpt init                    Initialize project
@@ -28,8 +28,8 @@ Examples:
   $ pmpt history                 View version history
   $ pmpt history --compact       Hide minor changes
   $ pmpt squash v2 v5            Merge versions v2-v5 into v2
-  $ pmpt export                  Export history as shareable zip
-  $ pmpt import <file.zip>       Import project from zip
+  $ pmpt export                  Export as .pmpt file (single JSON)
+  $ pmpt import <file.pmpt>      Import from .pmpt file
 
 Folder structure:
   .pmpt/
