@@ -14,12 +14,11 @@ export function startWatching(
 
   const pmptDir = getPmptDir(projectPath);
 
-  // pmpt 폴더의 모든 MD 파일 감시
+  // Watch all MD files in pmpt folder
   const watcher = chokidar.watch('**/*.md', {
     cwd: pmptDir,
     ignoreInitial: true,
     persistent: true,
-    // 짧은 시간 내 여러 변경을 하나로 묶기
     awaitWriteFinish: {
       stabilityThreshold: 500,
       pollInterval: 100,
@@ -36,7 +35,7 @@ export function startWatching(
     }
   };
 
-  // 디바운스된 스냅샷 저장
+  // Debounced snapshot save (1 second)
   const debouncedSave = () => {
     if (debounceTimer) {
       clearTimeout(debounceTimer);
@@ -51,7 +50,7 @@ export function startWatching(
       fileContents.set(path, content);
       debouncedSave();
     } catch {
-      // 파일 읽기 실패 무시
+      // Ignore file read errors
     }
   });
 
@@ -61,13 +60,13 @@ export function startWatching(
       const newContent = readFileSync(fullPath, 'utf-8');
       const oldContent = fileContents.get(path);
 
-      // 내용이 실제로 변경된 경우에만 스냅샷
+      // Only snapshot if content actually changed
       if (oldContent !== newContent) {
         fileContents.set(path, newContent);
         debouncedSave();
       }
     } catch {
-      // 파일 읽기 실패 무시
+      // Ignore file read errors
     }
   });
 

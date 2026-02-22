@@ -1,57 +1,66 @@
-# promptwiki-cli
+# pmpt-cli
 
-CLI tool for contributing to [PromptWiki](https://pmptwiki.com) — a community-driven guide to working with AI.
+CLI tool for recording and sharing your AI-driven product development journey.
+
+**Website**: [pmptwiki.com](https://pmptwiki.com)
 
 ## Install
 
 ```bash
-npm install -g promptwiki-cli
+npm install -g pmpt-cli
 ```
 
-## Usage
-
-### Create a new document
+## Quick Start
 
 ```bash
-promptwiki new
+# Initialize project
+pmpt init
+
+# Start product planning (6 questions → AI prompt)
+pmpt plan
+
+# Save snapshot manually
+pmpt save
+
+# Or auto-detect file changes
+pmpt watch
+
+# View version history
+pmpt history
+pmpt history --compact   # Hide minor changes
+
+# Squash versions
+pmpt squash v2 v5        # Merge v2-v5 into v2
 ```
 
-Interactive prompts will guide you through creating a properly structured markdown file.
+## Folder Structure
 
-### Validate a document
-
-```bash
-promptwiki validate ko/guide/beginner/my-guide.md
 ```
-
-Checks frontmatter schema, required fields, and minimum content length before submission.
-
-### Submit via Pull Request
-
-```bash
-promptwiki submit ko/guide/beginner/my-guide.md
+.promptwiki/
+├── config.json           # Config file
+├── pmpt/                  # Working folder (MD files)
+└── .history/              # Version history
 ```
-
-Automatically forks `promptwiki/content`, creates a branch, and opens a Pull Request. Requires a GitHub Personal Access Token with `repo` scope (you'll be prompted on first use).
-
-### Logout
-
-```bash
-promptwiki logout
-```
-
-Removes stored GitHub credentials from `~/.config/promptwiki/auth.json`.
 
 ## Workflow
 
-```
-promptwiki new          # create file interactively
-# edit the file in your editor
-promptwiki validate     # check before submitting
-promptwiki submit       # fork → branch → PR
-```
+1. `pmpt init` → Initialize project
+2. `pmpt plan` → Answer 6 questions → `pmpt.md` generated
+3. Copy `pmpt.md` to AI → Build with AI conversation
+4. `pmpt save` or `pmpt watch` → Save progress
+5. `pmpt submit` → Share to archive (coming soon)
 
-Once your PR is merged into `promptwiki/content`, the site at pmptwiki.com updates automatically.
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `pmpt init` | Initialize project folder |
+| `pmpt plan` | Quick product planning with 6 questions |
+| `pmpt save` | Save current state as snapshot |
+| `pmpt watch` | Auto-detect file changes |
+| `pmpt status` | Check project status |
+| `pmpt history` | View version history |
+| `pmpt squash` | Merge multiple versions |
 
 ## License
 

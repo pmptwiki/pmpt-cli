@@ -1,21 +1,22 @@
 {
-  "name": "promptwiki-cli",
-  "version": "0.5.3",
+  "name": "pmpt-cli",
+  "version": "1.0.0",
   "description": "Record and share your AI-driven product development journey",
   "type": "module",
   "bin": {
-    "promptwiki": "./dist/index.js",
     "pmpt": "./dist/index.js"
   },
   "files": [
     "dist"
   ],
   "keywords": [
-    "promptwiki",
+    "pmpt",
     "cli",
     "prompt",
     "ai",
-    "wiki"
+    "spec",
+    "log",
+    "development"
   ],
   "homepage": "https://pmptwiki.com",
   "repository": {
