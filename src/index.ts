@@ -3,14 +3,40 @@ import { Command } from 'commander';
 import { cmdNew } from './commands/new.js';
 import { cmdValidate } from './commands/validate.js';
 import { cmdSubmit } from './commands/submit.js';
+import { cmdInit } from './commands/init.js';
+import { cmdStatus } from './commands/status.js';
+import { cmdHistory } from './commands/hist.js';
+import { cmdWatch } from './commands/watch.js';
 
 const program = new Command();
 
 program
   .name('promptwiki')
-  .description('PromptWiki 기여 CLI 도구')
+  .description('PromptWiki — AI 대화 히스토리 추적 & 기여 도구')
   .version('0.1.0');
 
+// Project tracking commands
+program
+  .command('init [path]')
+  .description('프로젝트 폴더를 초기화하고 히스토리 추적을 시작합니다')
+  .action(cmdInit);
+
+program
+  .command('watch [path]')
+  .description('파일 변경을 실시간으로 감지하고 자동으로 버전을 저장합니다')
+  .action(cmdWatch);
+
+program
+  .command('status [path]')
+  .description('프로젝트 상태와 추적 중인 파일을 확인합니다')
+  .action(cmdStatus);
+
+program
+  .command('history [path]')
+  .description('저장된 버전 히스토리를 확인합니다')
+  .action(cmdHistory);
+
+// Contribution commands
 program
   .command('new')
   .description('새 문서를 대화형으로 생성합니다')
