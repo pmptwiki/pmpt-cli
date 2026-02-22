@@ -111,7 +111,19 @@ Add a "## Progress" section below and keep it updated:
 - [ ] Pending item
 \`\`\`
 
-This keeps a living record of our development journey.
+Also, add a "## Snapshot Log" section to record what was built at each checkpoint:
+\`\`\`
+## Snapshot Log
+### v1 - Initial Setup
+- Set up project structure
+- Installed dependencies: React, Tailwind
+
+### v2 - Auth Feature
+- Implemented login/signup
+- Added JWT authentication
+\`\`\`
+
+This helps others understand what was built at each version when they import this project.
 `;
 }
 
