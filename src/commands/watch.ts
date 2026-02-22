@@ -1,34 +1,38 @@
 import * as p from '@clack/prompts';
 import { resolve } from 'path';
-import { isInitialized } from '../lib/config.js';
+import { isInitialized, getPmptDir } from '../lib/config.js';
 import { startWatching } from '../lib/watcher.js';
 
 export function cmdWatch(path?: string): void {
   const projectPath = path ? resolve(path) : process.cwd();
 
   if (!isInitialized(projectPath)) {
-    p.log.error('프로젝트가 초기화되지 않았습니다. `promptwiki init`을 먼저 실행하세요.');
+    p.log.error('Project not initialized. Run `pmpt init` first.');
     process.exit(1);
   }
 
-  p.intro('PromptWiki — 파일 감지 시작');
-  p.log.info(`경로: ${projectPath}`);
-  p.log.info('Markdown 파일 변경을 감지합니다...');
-  p.log.info('종료하려면 Ctrl+C를 누르세요.');
+  const pmptDir = getPmptDir(projectPath);
 
-  const watcher = startWatching(projectPath, (file, version, git) => {
-    let msg = `${file} → v${version} 저장됨`;
+  p.intro('PromptWiki — File Watcher');
+  p.log.info(`Watching: ${pmptDir}`);
+  p.log.info('Auto-saving snapshots on MD file changes.');
+  p.log.info('Press Ctrl+C to stop.');
+  p.log.message('');
+
+  const watcher = startWatching(projectPath, (version, files, git) => {
+    let msg = `v${version} saved (${files.length} file(s))`;
     if (git) {
       msg += ` · ${git.commit}`;
-      if (git.dirty) msg += ' (uncommitted changes)';
+      if (git.dirty) msg += ' (uncommitted)';
     }
     p.log.success(msg);
   });
 
   process.on('SIGINT', () => {
-    p.log.info('\n감지 중지 중...');
+    p.log.message('');
+    p.log.info('Stopping watcher...');
     watcher.close();
-    p.outro('PromptWiki 감지가 중지되었습니다');
+    p.outro('PromptWiki watcher stopped');
     process.exit(0);
   });
 }

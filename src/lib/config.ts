@@ -14,10 +14,15 @@ export interface ProjectConfig {
 
 const CONFIG_DIR = '.promptwiki';
 const CONFIG_FILE = 'config.json';
-const HISTORY_DIR = 'history';
+const PMPT_DIR = 'pmpt';      // 작업 폴더 (추적 대상)
+const HISTORY_DIR = '.history'; // 히스토리 (숨김)
 
 export function getConfigDir(projectPath: string): string {
   return join(projectPath, CONFIG_DIR);
+}
+
+export function getPmptDir(projectPath: string): string {
+  return join(getConfigDir(projectPath), PMPT_DIR);
 }
 
 export function getHistoryDir(projectPath: string): string {
@@ -35,15 +40,17 @@ export interface InitOptions {
 
 export function initializeProject(projectPath: string, options?: InitOptions): ProjectConfig {
   const configDir = getConfigDir(projectPath);
+  const pmptDir = getPmptDir(projectPath);
   const historyDir = getHistoryDir(projectPath);
 
   mkdirSync(configDir, { recursive: true });
+  mkdirSync(pmptDir, { recursive: true });
   mkdirSync(historyDir, { recursive: true });
 
   const config: ProjectConfig = {
     projectPath,
-    watchPatterns: ['**/*.md', '**/*.mdx'],
-    ignorePatterns: ['node_modules/**', '.promptwiki/**', 'dist/**'],
+    watchPatterns: ['.promptwiki/pmpt/**/*.md'],  // pmpt 폴더만 추적
+    ignorePatterns: ['node_modules/**', '.promptwiki/.history/**', 'dist/**'],
     createdAt: new Date().toISOString(),
     repo: options?.repo,
     trackGit: options?.trackGit ?? true,

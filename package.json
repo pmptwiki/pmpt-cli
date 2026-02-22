@@ -1,7 +1,7 @@
 {
   "name": "promptwiki-cli",
-  "version": "0.4.0",
-  "description": "CLI tool for contributing to PromptWiki",
+  "version": "0.5.1",
+  "description": "Record and share your AI-driven product development journey",
   "type": "module",
   "bin": {
     "promptwiki": "./dist/index.js",
@@ -37,6 +37,7 @@
     "@octokit/rest": "^21.0.0",
     "chokidar": "^3.6.0",
     "commander": "^12.0.0",
+    "fast-glob": "^3.3.0",
     "gray-matter": "^4.0.3",
     "zod": "^3.22.0"
   },

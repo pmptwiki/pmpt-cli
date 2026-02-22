@@ -1,7 +1,22 @@
-import { copyFileSync, existsSync, readdirSync, readFileSync, writeFileSync, statSync } from 'fs';
+import { copyFileSync, existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync, statSync } from 'fs';
 import { basename, join, relative } from 'path';
-import { getHistoryDir, loadConfig } from './config.js';
+import { getHistoryDir, getPmptDir, loadConfig } from './config.js';
 import { getGitInfo, isGitRepo, type GitInfo } from './git.js';
+import glob from 'fast-glob';
+
+export interface SnapshotEntry {
+  version: number;
+  timestamp: string;
+  snapshotDir: string;
+  files: string[];
+  git?: {
+    commit: string;
+    commitFull: string;
+    branch: string;
+    dirty: boolean;
+    tag?: string;
+  };
+}
 
 export interface HistoryEntry {
   version: number;
@@ -17,20 +32,120 @@ export interface HistoryEntry {
   };
 }
 
+/**
+ * pmpt 폴더 전체를 스냅샷으로 저장
+ * .history/v{N}-{timestamp}/ 폴더에 모든 파일 복사
+ */
+export function createFullSnapshot(projectPath: string): SnapshotEntry {
+  const historyDir = getHistoryDir(projectPath);
+  const pmptDir = getPmptDir(projectPath);
+
+  mkdirSync(historyDir, { recursive: true });
+
+  // 다음 버전 번호 찾기
+  const existing = getAllSnapshots(projectPath);
+  const version = existing.length + 1;
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const snapshotName = `v${version}-${timestamp}`;
+  const snapshotDir = join(historyDir, snapshotName);
+
+  mkdirSync(snapshotDir, { recursive: true });
+
+  // pmpt 폴더의 모든 MD 파일 복사
+  const files: string[] = [];
+
+  if (existsSync(pmptDir)) {
+    const mdFiles = glob.sync('**/*.md', { cwd: pmptDir });
+
+    for (const file of mdFiles) {
+      const srcPath = join(pmptDir, file);
+      const destPath = join(snapshotDir, file);
+
+      // 하위 디렉토리가 있으면 생성
+      const destDir = join(snapshotDir, file.split('/').slice(0, -1).join('/'));
+      if (destDir !== snapshotDir) {
+        mkdirSync(destDir, { recursive: true });
+      }
+
+      copyFileSync(srcPath, destPath);
+      files.push(file);
+    }
+  }
+
+  // Git 정보 수집
+  const config = loadConfig(projectPath);
+  let gitData: SnapshotEntry['git'] | undefined;
+
+  if (config?.trackGit && isGitRepo(projectPath)) {
+    const gitInfo = getGitInfo(projectPath, config.repo);
+    if (gitInfo) {
+      gitData = {
+        commit: gitInfo.commit,
+        commitFull: gitInfo.commitFull,
+        branch: gitInfo.branch,
+        dirty: gitInfo.dirty,
+        tag: gitInfo.tag,
+      };
+    }
+  }
+
+  // 메타데이터 저장
+  const metaPath = join(snapshotDir, '.meta.json');
+  writeFileSync(metaPath, JSON.stringify({
+    version,
+    timestamp,
+    files,
+    git: gitData,
+  }, null, 2), 'utf-8');
+
+  return {
+    version,
+    timestamp,
+    snapshotDir,
+    files,
+    git: gitData,
+  };
+}
+
+/**
+ * 단일 파일 스냅샷 (pmpt 폴더 내 특정 파일만)
+ * 기존 호환성을 위해 유지하되, 내부적으로 전체 스냅샷 사용
+ */
 export function createSnapshot(projectPath: string, filePath: string): HistoryEntry {
   const historyDir = getHistoryDir(projectPath);
-  const relPath = relative(projectPath, filePath);
+  const pmptDir = getPmptDir(projectPath);
+  const relPath = relative(pmptDir, filePath);
+
+  // 파일이 pmpt 폴더 외부에 있는 경우
+  if (relPath.startsWith('..')) {
+    // 프로젝트 루트 기준 상대 경로 사용
+    const projectRelPath = relative(projectPath, filePath);
+    return createSingleFileSnapshot(projectPath, filePath, projectRelPath);
+  }
+
+  return createSingleFileSnapshot(projectPath, filePath, relPath);
+}
+
+function createSingleFileSnapshot(projectPath: string, filePath: string, relPath: string): HistoryEntry {
+  const historyDir = getHistoryDir(projectPath);
   const fileName = basename(filePath, '.md');
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
 
-  // Find next version number
+  // 해당 파일의 기존 버전 수 확인
   const existing = getFileHistory(projectPath, relPath);
   const version = existing.length + 1;
 
-  const historyFileName = `${fileName}-v${version}-${timestamp}.md`;
-  const historyPath = join(historyDir, historyFileName);
+  // 버전 폴더 생성
+  const snapshotName = `v${version}-${timestamp}`;
+  const snapshotDir = join(historyDir, snapshotName);
+  mkdirSync(snapshotDir, { recursive: true });
 
-  // Git 정보 수집 (설정에서 trackGit이 활성화된 경우)
+  // 파일 복사
+  const destPath = join(snapshotDir, basename(filePath));
+  copyFileSync(filePath, destPath);
+
+  // Git 정보 수집
   const config = loadConfig(projectPath);
   let gitData: HistoryEntry['git'] | undefined;
 
@@ -47,124 +162,139 @@ export function createSnapshot(projectPath: string, filePath: string): HistoryEn
     }
   }
 
-  // 파일 복사
-  copyFileSync(filePath, historyPath);
-
-  // Git 정보를 메타데이터 파일로 저장
-  if (gitData) {
-    const metaPath = historyPath.replace(/\.md$/, '.meta.json');
-    writeFileSync(metaPath, JSON.stringify({
-      version,
-      timestamp,
-      filePath: relPath,
-      git: gitData,
-    }, null, 2), 'utf-8');
-  }
+  // 메타데이터 저장
+  const metaPath = join(snapshotDir, '.meta.json');
+  writeFileSync(metaPath, JSON.stringify({
+    version,
+    timestamp,
+    filePath: relPath,
+    git: gitData,
+  }, null, 2), 'utf-8');
 
   return {
     version,
     timestamp,
     filePath: relPath,
-    historyPath,
+    historyPath: destPath,
     git: gitData,
   };
 }
 
-export function getFileHistory(projectPath: string, relPath: string): HistoryEntry[] {
+/**
+ * 모든 스냅샷 목록 조회
+ */
+export function getAllSnapshots(projectPath: string): SnapshotEntry[] {
   const historyDir = getHistoryDir(projectPath);
   if (!existsSync(historyDir)) return [];
 
-  const fileName = basename(relPath, '.md');
-  const files = readdirSync(historyDir);
+  const entries: SnapshotEntry[] = [];
+  const dirs = readdirSync(historyDir);
 
-  const entries: HistoryEntry[] = [];
-  for (const file of files) {
-    if (file.startsWith(fileName + '-v') && file.endsWith('.md') && !file.endsWith('.meta.json')) {
-      const match = file.match(/-v(\d+)-(.+)\.md$/);
-      if (match) {
-        const historyPath = join(historyDir, file);
-        const metaPath = historyPath.replace(/\.md$/, '.meta.json');
+  for (const dir of dirs) {
+    const match = dir.match(/^v(\d+)-(.+)$/);
+    if (!match) continue;
 
-        let gitData: HistoryEntry['git'] | undefined;
-        if (existsSync(metaPath)) {
-          try {
-            const meta = JSON.parse(readFileSync(metaPath, 'utf-8'));
-            gitData = meta.git;
-          } catch {
-            // 메타 파일 파싱 실패 시 무시
-          }
-        }
+    const snapshotDir = join(historyDir, dir);
+    if (!statSync(snapshotDir).isDirectory()) continue;
 
-        entries.push({
-          version: parseInt(match[1], 10),
-          timestamp: match[2].replace(/-/g, ':'),
-          filePath: relPath,
-          historyPath,
-          git: gitData,
-        });
+    const metaPath = join(snapshotDir, '.meta.json');
+    let meta: any = {};
+
+    if (existsSync(metaPath)) {
+      try {
+        meta = JSON.parse(readFileSync(metaPath, 'utf-8'));
+      } catch {
+        // 메타 파일 파싱 실패 시 기본값 사용
       }
     }
+
+    entries.push({
+      version: parseInt(match[1], 10),
+      timestamp: match[2].replace(/-/g, ':'),
+      snapshotDir,
+      files: meta.files || [],
+      git: meta.git,
+    });
   }
 
   return entries.sort((a, b) => a.version - b.version);
 }
 
-export function getAllHistory(projectPath: string): HistoryEntry[] {
+/**
+ * 특정 파일의 히스토리 조회 (하위 호환성)
+ */
+export function getFileHistory(projectPath: string, relPath: string): HistoryEntry[] {
   const historyDir = getHistoryDir(projectPath);
   if (!existsSync(historyDir)) return [];
 
-  const files = readdirSync(historyDir);
+  const fileName = basename(relPath);
+  const entries: HistoryEntry[] = [];
+  const dirs = readdirSync(historyDir);
+
+  for (const dir of dirs) {
+    const match = dir.match(/^v(\d+)-(.+)$/);
+    if (!match) continue;
+
+    const snapshotDir = join(historyDir, dir);
+    if (!statSync(snapshotDir).isDirectory()) continue;
+
+    const filePath = join(snapshotDir, fileName);
+    if (!existsSync(filePath)) continue;
+
+    const metaPath = join(snapshotDir, '.meta.json');
+    let gitData: HistoryEntry['git'] | undefined;
+
+    if (existsSync(metaPath)) {
+      try {
+        const meta = JSON.parse(readFileSync(metaPath, 'utf-8'));
+        gitData = meta.git;
+      } catch {
+        // 메타 파일 파싱 실패 시 무시
+      }
+    }
+
+    entries.push({
+      version: parseInt(match[1], 10),
+      timestamp: match[2].replace(/-/g, ':'),
+      filePath: relPath,
+      historyPath: filePath,
+      git: gitData,
+    });
+  }
+
+  return entries.sort((a, b) => a.version - b.version);
+}
+
+/**
+ * 전체 히스토리 조회 (모든 스냅샷의 모든 파일)
+ */
+export function getAllHistory(projectPath: string): HistoryEntry[] {
+  const snapshots = getAllSnapshots(projectPath);
   const entries: HistoryEntry[] = [];
 
-  for (const file of files) {
-    // .meta.json 파일 제외
-    if (file.endsWith('.meta.json')) continue;
-
-    const match = file.match(/^(.+)-v(\d+)-(.+)\.md$/);
-    if (match) {
-      const [, name, versionStr, timestamp] = match;
-      const historyPath = join(historyDir, file);
-      const metaPath = historyPath.replace(/\.md$/, '.meta.json');
-
-      let gitData: HistoryEntry['git'] | undefined;
-      if (existsSync(metaPath)) {
-        try {
-          const meta = JSON.parse(readFileSync(metaPath, 'utf-8'));
-          gitData = meta.git;
-        } catch {
-          // 메타 파일 파싱 실패 시 무시
-        }
-      }
-
+  for (const snapshot of snapshots) {
+    for (const file of snapshot.files) {
       entries.push({
-        version: parseInt(versionStr, 10),
-        timestamp: timestamp.replace(/-/g, ':'),
-        filePath: name + '.md',
-        historyPath,
-        git: gitData,
+        version: snapshot.version,
+        timestamp: snapshot.timestamp,
+        filePath: file,
+        historyPath: join(snapshot.snapshotDir, file),
+        git: snapshot.git,
       });
     }
   }
 
-  return entries.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  return entries.sort((a, b) =>
+    new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
 }
 
+/**
+ * 추적 중인 파일 목록 (pmpt 폴더 기준)
+ */
 export function getTrackedFiles(projectPath: string): string[] {
-  const historyDir = getHistoryDir(projectPath);
-  if (!existsSync(historyDir)) return [];
+  const pmptDir = getPmptDir(projectPath);
+  if (!existsSync(pmptDir)) return [];
 
-  const files = readdirSync(historyDir);
-  const tracked = new Set<string>();
-
-  for (const file of files) {
-    // .meta.json 파일 제외
-    if (file.endsWith('.meta.json')) continue;
-
-    const match = file.match(/^(.+)-v\d+-.*\.md$/);
-    if (match) {
-      tracked.add(match[1] + '.md');
-    }
-  }
-
-  return Array.from(tracked);
+  return glob.sync('**/*.md', { cwd: pmptDir });
 }

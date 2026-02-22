@@ -1,36 +1,46 @@
 import * as p from '@clack/prompts';
 import { resolve } from 'path';
-import { isInitialized, loadConfig } from '../lib/config.js';
-import { getTrackedFiles } from '../lib/history.js';
+import { isInitialized, loadConfig, getPmptDir } from '../lib/config.js';
+import { getTrackedFiles, getAllSnapshots } from '../lib/history.js';
 
 export function cmdStatus(path?: string): void {
   const projectPath = path ? resolve(path) : process.cwd();
 
   if (!isInitialized(projectPath)) {
-    p.log.error('프로젝트가 초기화되지 않았습니다. `promptwiki init`을 먼저 실행하세요.');
+    p.log.error('Project not initialized. Run `pmpt init` first.');
     process.exit(1);
   }
 
   const config = loadConfig(projectPath);
   const tracked = getTrackedFiles(projectPath);
+  const snapshots = getAllSnapshots(projectPath);
 
-  p.intro('PromptWiki — 프로젝트 상태');
+  p.intro('PromptWiki — Project Status');
 
-  p.note(
-    [
-      `경로: ${projectPath}`,
-      `생성일: ${new Date(config!.createdAt).toLocaleString('ko-KR')}`,
-      config!.lastPublished
-        ? `마지막 발행: ${new Date(config!.lastPublished).toLocaleString('ko-KR')}`
-        : '',
-      '',
-      `추적 중인 파일: ${tracked.length}개`,
-      ...tracked.map((f) => `  - ${f}`),
-    ]
-      .filter(Boolean)
-      .join('\n'),
-    '프로젝트 정보'
-  );
+  const notes = [
+    `Path: ${projectPath}`,
+    `Created: ${new Date(config!.createdAt).toLocaleString()}`,
+  ];
+
+  if (config!.lastPublished) {
+    notes.push(`Last published: ${new Date(config!.lastPublished).toLocaleString()}`);
+  }
+
+  notes.push('');
+  notes.push(`pmpt folder: .promptwiki/pmpt/`);
+  notes.push(`Snapshots: ${snapshots.length}`);
+  notes.push('');
+  notes.push(`Tracked files: ${tracked.length}`);
+
+  for (const f of tracked) {
+    notes.push(`  - ${f}`);
+  }
+
+  if (tracked.length === 0) {
+    notes.push('  (none - start with pmpt plan)');
+  }
+
+  p.note(notes.join('\n'), 'Project Info');
 
   p.outro('');
 }

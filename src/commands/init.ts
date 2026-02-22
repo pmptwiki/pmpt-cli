@@ -11,21 +11,21 @@ interface InitOptions {
 }
 
 export async function cmdInit(path?: string, options?: InitOptions): Promise<void> {
-  p.intro('PromptWiki — 프로젝트 초기화');
+  p.intro('PromptWiki — Project Initialization');
 
   const projectPath = path ? resolve(path) : process.cwd();
 
   if (!existsSync(projectPath)) {
-    p.outro(`경로가 존재하지 않습니다: ${projectPath}`);
+    p.outro(`Path does not exist: ${projectPath}`);
     process.exit(1);
   }
 
   if (isInitialized(projectPath)) {
-    p.outro(`이미 초기화된 프로젝트입니다: ${projectPath}`);
+    p.outro(`Project already initialized: ${projectPath}`);
     process.exit(0);
   }
 
-  // Git 저장소 감지
+  // Detect Git repository
   const isGit = isGitRepo(projectPath);
   let repoUrl = options?.repo;
   let gitInfo = null;
@@ -37,16 +37,16 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
     }
   }
 
-  // 확인 메시지 구성
+  // Build confirmation message
   const confirmMessage = [
-    `이 폴더에서 AI 대화 히스토리를 추적하시겠습니까?`,
-    `  경로: ${projectPath}`,
+    `Track AI conversation history in this folder?`,
+    `  Path: ${projectPath}`,
   ];
 
   if (isGit && gitInfo) {
     confirmMessage.push(`  Git: ${formatGitInfo(gitInfo)}`);
     if (repoUrl) {
-      confirmMessage.push(`  저장소: ${repoUrl}`);
+      confirmMessage.push(`  Repository: ${repoUrl}`);
     }
   }
 
@@ -56,39 +56,39 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
   });
 
   if (p.isCancel(confirm) || !confirm) {
-    p.cancel('취소되었습니다');
+    p.cancel('Cancelled');
     process.exit(0);
   }
 
-  // Git 저장소인데 repoUrl이 없으면 추천 안내
+  // If Git repo but no repoUrl, suggest connecting
   if (isGit && !repoUrl) {
-    p.log.info(`💡 Tip: --repo 옵션으로 GitHub 저장소를 연결하면 더 강력합니다!`);
-    p.log.message(`   • 버전별 commit hash가 자동 기록됩니다`);
-    p.log.message(`   • 나중에 pmpt submit으로 PR을 바로 생성할 수 있습니다`);
-    p.log.message(`   • 다른 사람이 정확한 코드 시점을 재현할 수 있습니다`);
+    p.log.info(`Tip: Connect a GitHub repo with --repo for more features!`);
+    p.log.message(`   • Auto-record commit hash for each version`);
+    p.log.message(`   • Create PRs directly with pmpt submit`);
+    p.log.message(`   • Others can reproduce exact code states`);
     p.log.message('');
 
     const repoChoice = await p.select({
-      message: 'GitHub 저장소를 연결하시겠습니까?',
+      message: 'Connect GitHub repository?',
       options: [
-        { value: 'now', label: '지금 연결', hint: '저장소 URL 입력' },
-        { value: 'later', label: '나중에 연결', hint: 'pmpt init --repo <url> 로 재실행' },
-        { value: 'skip', label: '연결 안 함', hint: 'Git 추적만 사용' },
+        { value: 'now', label: 'Connect now', hint: 'Enter repository URL' },
+        { value: 'later', label: 'Connect later', hint: 'Re-run with pmpt init --repo <url>' },
+        { value: 'skip', label: 'Skip', hint: 'Use Git tracking only' },
       ],
     });
 
     if (p.isCancel(repoChoice)) {
-      p.cancel('취소되었습니다');
+      p.cancel('Cancelled');
       process.exit(0);
     }
 
     if (repoChoice === 'now') {
       const inputRepo = await p.text({
-        message: 'GitHub 저장소 URL을 입력하세요',
+        message: 'Enter GitHub repository URL',
         placeholder: 'https://github.com/username/repo',
         validate: (value) => {
-          if (!value) return '저장소 URL을 입력하세요';
-          if (!value.includes('github.com')) return 'GitHub URL을 입력하세요';
+          if (!value) return 'Please enter repository URL';
+          if (!value.includes('github.com')) return 'Please enter a GitHub URL';
           return undefined;
         },
       });
@@ -100,40 +100,44 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
   }
 
   const s = p.spinner();
-  s.start('프로젝트 초기화 중...');
+  s.start('Initializing project...');
 
   try {
     const config = initializeProject(projectPath, {
       repo: repoUrl,
       trackGit: isGit,
     });
-    s.stop('초기화 완료');
+    s.stop('Initialized');
 
     const notes = [
-      `경로: ${config.projectPath}`,
-      `추적 패턴: ${config.watchPatterns.join(', ')}`,
-      `무시 패턴: ${config.ignorePatterns.join(', ')}`,
+      `Path: ${config.projectPath}`,
+      '',
+      'Folder structure:',
+      '  .promptwiki/',
+      '  ├── config.json     Config file',
+      '  ├── pmpt/           Working folder (MD files)',
+      '  └── .history/       Version history',
     ];
 
     if (config.repo) {
-      notes.push(`Git 저장소: ${config.repo}`);
+      notes.push('', `Git repository: ${config.repo}`);
     }
 
     if (config.trackGit) {
-      notes.push(`Git 추적: 활성화 (각 버전에 commit hash 기록)`);
+      notes.push(`Git tracking: Enabled`);
     }
 
-    notes.push('', '다음 명령어로 시작하세요:');
-    notes.push('  pmpt plan     # 제품 개발 플랜 모드 시작');
-    notes.push('  pmpt watch    # 파일 변경 자동 추적 시작');
-    notes.push('  pmpt status   # 추적 중인 파일 확인');
-    notes.push('  pmpt history  # 버전 히스토리 보기');
+    notes.push('', 'Get started with:');
+    notes.push('  pmpt plan     # Start product planning');
+    notes.push('  pmpt save     # Save current state snapshot');
+    notes.push('  pmpt watch    # Auto-detect file changes');
+    notes.push('  pmpt history  # View version history');
 
-    p.note(notes.join('\n'), '프로젝트 정보');
+    p.note(notes.join('\n'), 'Project Info');
 
-    // 플랜 모드 시작 여부 확인
+    // Ask to start plan mode
     const startPlan = await p.confirm({
-      message: '플랜 모드를 시작하시겠습니까? (처음이라면 추천!)',
+      message: 'Start plan mode? (Recommended for first-timers!)',
       initialValue: true,
     });
 
@@ -141,10 +145,10 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
       p.log.message('');
       await cmdPlan(projectPath);
     } else {
-      p.outro('PromptWiki 프로젝트가 초기화되었습니다');
+      p.outro('PromptWiki project initialized');
     }
   } catch (error) {
-    s.stop('초기화 실패');
+    s.stop('Initialization failed');
     p.log.error((error as Error).message);
     process.exit(1);
   }

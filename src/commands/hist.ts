@@ -1,53 +1,45 @@
 import * as p from '@clack/prompts';
 import { resolve } from 'path';
 import { isInitialized } from '../lib/config.js';
-import { getAllHistory } from '../lib/history.js';
+import { getAllSnapshots } from '../lib/history.js';
 
 export function cmdHistory(path?: string): void {
   const projectPath = path ? resolve(path) : process.cwd();
 
   if (!isInitialized(projectPath)) {
-    p.log.error('프로젝트가 초기화되지 않았습니다. `promptwiki init`을 먼저 실행하세요.');
+    p.log.error('Project not initialized. Run `pmpt init` first.');
     process.exit(1);
   }
 
-  const history = getAllHistory(projectPath);
+  const snapshots = getAllSnapshots(projectPath);
 
-  if (history.length === 0) {
-    p.outro('아직 저장된 히스토리가 없습니다.');
+  if (snapshots.length === 0) {
+    p.intro('PromptWiki — Version History');
+    p.log.warn('No snapshots saved yet.');
+    p.log.info('Save snapshots with pmpt save or pmpt watch.');
+    p.outro('');
     return;
   }
 
-  p.intro(`PromptWiki — 버전 히스토리 (총 ${history.length}개)`);
+  p.intro(`PromptWiki — Version History (${snapshots.length} total)`);
 
-  // Group by file
-  const byFile = new Map<string, typeof history>();
-  for (const entry of history) {
-    const existing = byFile.get(entry.filePath) || [];
-    existing.push(entry);
-    byFile.set(entry.filePath, existing);
-  }
+  for (const snapshot of snapshots) {
+    const dateStr = new Date(snapshot.timestamp).toLocaleString(undefined, {
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
 
-  for (const [file, entries] of byFile) {
-    p.note(
-      entries
-        .map((e) => {
-          const dateStr = new Date(e.timestamp).toLocaleString('ko-KR', {
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-          });
-          let line = `  v${e.version} — ${dateStr}`;
-          if (e.git) {
-            line += ` · ${e.git.commit}`;
-            if (e.git.dirty) line += ' (dirty)';
-          }
-          return line;
-        })
-        .join('\n'),
-      file
-    );
+    let header = `v${snapshot.version} — ${dateStr}`;
+    if (snapshot.git) {
+      header += ` · ${snapshot.git.commit}`;
+      if (snapshot.git.dirty) header += ' (dirty)';
+    }
+
+    const files = snapshot.files.map((f) => `  - ${f}`).join('\n');
+
+    p.note(files || '  (no files)', header);
   }
 
   p.outro('');
