@@ -58,15 +58,42 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
     process.exit(0);
   }
 
-  // Git 저장소인데 repoUrl이 없으면 물어보기
+  // Git 저장소인데 repoUrl이 없으면 추천 안내
   if (isGit && !repoUrl) {
-    const inputRepo = await p.text({
-      message: 'GitHub 저장소 URL을 입력하세요 (선택, Enter로 건너뛰기)',
-      placeholder: 'https://github.com/username/repo',
+    p.log.info(`💡 Tip: --repo 옵션으로 GitHub 저장소를 연결하면 더 강력합니다!`);
+    p.log.message(`   • 버전별 commit hash가 자동 기록됩니다`);
+    p.log.message(`   • 나중에 pmpt submit으로 PR을 바로 생성할 수 있습니다`);
+    p.log.message(`   • 다른 사람이 정확한 코드 시점을 재현할 수 있습니다`);
+    p.log.message('');
+
+    const repoChoice = await p.select({
+      message: 'GitHub 저장소를 연결하시겠습니까?',
+      options: [
+        { value: 'now', label: '지금 연결', hint: '저장소 URL 입력' },
+        { value: 'later', label: '나중에 연결', hint: 'pmpt init --repo <url> 로 재실행' },
+        { value: 'skip', label: '연결 안 함', hint: 'Git 추적만 사용' },
+      ],
     });
 
-    if (!p.isCancel(inputRepo) && inputRepo) {
-      repoUrl = inputRepo;
+    if (p.isCancel(repoChoice)) {
+      p.cancel('취소되었습니다');
+      process.exit(0);
+    }
+
+    if (repoChoice === 'now') {
+      const inputRepo = await p.text({
+        message: 'GitHub 저장소 URL을 입력하세요',
+        placeholder: 'https://github.com/username/repo',
+        validate: (value) => {
+          if (!value) return '저장소 URL을 입력하세요';
+          if (!value.includes('github.com')) return 'GitHub URL을 입력하세요';
+          return undefined;
+        },
+      });
+
+      if (!p.isCancel(inputRepo) && inputRepo) {
+        repoUrl = inputRepo;
+      }
     }
   }
 
@@ -95,9 +122,9 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
     }
 
     notes.push('', '다음 명령어로 시작하세요:');
-    notes.push('  promptwiki watch    # 파일 변경 자동 추적 시작');
-    notes.push('  promptwiki status   # 추적 중인 파일 확인');
-    notes.push('  promptwiki history  # 버전 히스토리 보기');
+    notes.push('  pmpt watch    # 파일 변경 자동 추적 시작');
+    notes.push('  pmpt status   # 추적 중인 파일 확인');
+    notes.push('  pmpt history  # 버전 히스토리 보기');
 
     p.note(notes.join('\n'), '프로젝트 정보');
 
