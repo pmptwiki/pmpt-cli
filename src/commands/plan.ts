@@ -103,8 +103,25 @@ export async function cmdPlan(path?: string, options?: PlanOptions): Promise<voi
             if (copied) {
               p.log.success('AI prompt copied to clipboard!');
               p.log.message('');
-              p.log.step('Now open Claude, ChatGPT, or Codex and press Ctrl+V (Cmd+V on Mac)');
-              p.log.message('Your product journey starts now!');
+
+              // Eye-catching next step banner
+              const banner = [
+                '',
+                '┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓',
+                '┃                                                        ┃',
+                '┃   📋  NEXT STEP                                        ┃',
+                '┃                                                        ┃',
+                '┃   Open Claude, ChatGPT, or Cursor and press:           ┃',
+                '┃                                                        ┃',
+                '┃              ⌘ + V  (Mac)                              ┃',
+                '┃             Ctrl + V (Windows/Linux)                   ┃',
+                '┃                                                        ┃',
+                '┃   Your product journey starts now! 🚀                  ┃',
+                '┃                                                        ┃',
+                '┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛',
+                '',
+              ];
+              console.log(banner.join('\n'));
             } else {
               p.log.warn('Could not copy to clipboard. Showing content instead:');
               p.log.message('');
@@ -214,9 +231,25 @@ export async function cmdPlan(path?: string, options?: PlanOptions): Promise<voi
     p.log.message('');
     p.log.success('AI prompt copied to clipboard!');
     p.log.message('');
-    p.log.step('Open Claude, ChatGPT, or Codex and press Ctrl+V (Cmd+V on Mac)');
-    p.log.message('Your product journey starts now!');
-    p.log.message('');
+
+    // Eye-catching next step banner
+    const banner = [
+      '',
+      '┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓',
+      '┃                                                        ┃',
+      '┃   📋  NEXT STEP                                        ┃',
+      '┃                                                        ┃',
+      '┃   Open Claude, ChatGPT, or Cursor and press:           ┃',
+      '┃                                                        ┃',
+      '┃              ⌘ + V  (Mac)                              ┃',
+      '┃             Ctrl + V (Windows/Linux)                   ┃',
+      '┃                                                        ┃',
+      '┃   Your product journey starts now! 🚀                  ┃',
+      '┃                                                        ┃',
+      '┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛',
+      '',
+    ];
+    console.log(banner.join('\n'));
   } else {
     // Fallback: show prompt
     p.log.message('');
