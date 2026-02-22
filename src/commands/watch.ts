@@ -1,6 +1,6 @@
 import * as p from '@clack/prompts';
 import { resolve } from 'path';
-import { isInitialized, getWatchPaths } from '../lib/config.js';
+import { isInitialized, getDocsDir } from '../lib/config.js';
 import { startWatching } from '../lib/watcher.js';
 
 export function cmdWatch(path?: string): void {
@@ -11,10 +11,10 @@ export function cmdWatch(path?: string): void {
     process.exit(1);
   }
 
-  const watchPaths = getWatchPaths(projectPath);
+  const docsDir = getDocsDir(projectPath);
 
   p.intro('pmpt watch — File Watcher');
-  p.log.info(`Watching: ${watchPaths.join(', ')}`);
+  p.log.info(`Watching: ${docsDir}`);
   p.log.info('Auto-saving snapshots on MD file changes.');
   p.log.info('Press Ctrl+C to stop.');
   p.log.message('');

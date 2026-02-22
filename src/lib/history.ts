@@ -1,7 +1,7 @@
 import { copyFileSync, existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync, statSync } from 'fs';
 import { basename, join, relative } from 'path';
-import { getHistoryDir, getPmptDir, getWatchPaths, loadConfig } from './config.js';
-import { getGitInfo, isGitRepo, type GitInfo } from './git.js';
+import { getHistoryDir, getDocsDir, loadConfig } from './config.js';
+import { getGitInfo, isGitRepo } from './git.js';
 import glob from 'fast-glob';
 
 export interface SnapshotEntry {
@@ -33,12 +33,12 @@ export interface HistoryEntry {
 }
 
 /**
- * 모든 watchPaths 폴더의 MD 파일을 스냅샷으로 저장
+ * .pmpt/docs 폴더의 MD 파일을 스냅샷으로 저장
  * .history/v{N}-{timestamp}/ 폴더에 모든 파일 복사
  */
 export function createFullSnapshot(projectPath: string): SnapshotEntry {
   const historyDir = getHistoryDir(projectPath);
-  const watchPaths = getWatchPaths(projectPath);
+  const docsDir = getDocsDir(projectPath);
 
   mkdirSync(historyDir, { recursive: true });
 
@@ -52,30 +52,24 @@ export function createFullSnapshot(projectPath: string): SnapshotEntry {
 
   mkdirSync(snapshotDir, { recursive: true });
 
-  // 모든 watchPaths의 MD 파일 복사
+  // docs 폴더의 MD 파일 복사
   const files: string[] = [];
 
-  for (const watchPath of watchPaths) {
-    if (!existsSync(watchPath)) continue;
-
-    // Get relative path from project root for folder structure in snapshot
-    const relWatchPath = relative(projectPath, watchPath);
-    const mdFiles = glob.sync('**/*.md', { cwd: watchPath });
+  if (existsSync(docsDir)) {
+    const mdFiles = glob.sync('**/*.md', { cwd: docsDir });
 
     for (const file of mdFiles) {
-      const srcPath = join(watchPath, file);
-      // Store with folder prefix to avoid conflicts
-      const destRelPath = join(relWatchPath, file);
-      const destPath = join(snapshotDir, destRelPath);
+      const srcPath = join(docsDir, file);
+      const destPath = join(snapshotDir, file);
 
       // 하위 디렉토리가 있으면 생성
-      const destDir = join(snapshotDir, destRelPath.split('/').slice(0, -1).join('/'));
+      const destDir = join(snapshotDir, file.split('/').slice(0, -1).join('/'));
       if (destDir !== snapshotDir) {
         mkdirSync(destDir, { recursive: true });
       }
 
       copyFileSync(srcPath, destPath);
-      files.push(destRelPath);
+      files.push(file);
     }
   }
 
@@ -120,10 +114,10 @@ export function createFullSnapshot(projectPath: string): SnapshotEntry {
  */
 export function createSnapshot(projectPath: string, filePath: string): HistoryEntry {
   const historyDir = getHistoryDir(projectPath);
-  const pmptDir = getPmptDir(projectPath);
-  const relPath = relative(pmptDir, filePath);
+  const docsDir = getDocsDir(projectPath);
+  const relPath = relative(docsDir, filePath);
 
-  // 파일이 pmpt 폴더 외부에 있는 경우
+  // 파일이 docs 폴더 외부에 있는 경우
   if (relPath.startsWith('..')) {
     // 프로젝트 루트 기준 상대 경로 사용
     const projectRelPath = relative(projectPath, filePath);
@@ -135,7 +129,6 @@ export function createSnapshot(projectPath: string, filePath: string): HistoryEn
 
 function createSingleFileSnapshot(projectPath: string, filePath: string, relPath: string): HistoryEntry {
   const historyDir = getHistoryDir(projectPath);
-  const fileName = basename(filePath, '.md');
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
 
   // 해당 파일의 기존 버전 수 확인
@@ -296,22 +289,11 @@ export function getAllHistory(projectPath: string): HistoryEntry[] {
 }
 
 /**
- * 추적 중인 파일 목록 (모든 watchPaths 기준)
+ * 추적 중인 파일 목록 (.pmpt/docs 기준)
  */
 export function getTrackedFiles(projectPath: string): string[] {
-  const watchPaths = getWatchPaths(projectPath);
-  const files: string[] = [];
+  const docsDir = getDocsDir(projectPath);
+  if (!existsSync(docsDir)) return [];
 
-  for (const watchPath of watchPaths) {
-    if (!existsSync(watchPath)) continue;
-
-    const relWatchPath = relative(projectPath, watchPath);
-    const mdFiles = glob.sync('**/*.md', { cwd: watchPath });
-
-    for (const file of mdFiles) {
-      files.push(join(relWatchPath, file));
-    }
-  }
-
-  return files;
+  return glob.sync('**/*.md', { cwd: docsDir });
 }

@@ -1,5 +1,5 @@
 import chokidar from 'chokidar';
-import { loadConfig, getWatchPaths } from './config.js';
+import { loadConfig, getDocsDir } from './config.js';
 import { createFullSnapshot, type SnapshotEntry } from './history.js';
 import { readFileSync } from 'fs';
 import { join } from 'path';
@@ -13,13 +13,10 @@ export function startWatching(
     throw new Error('Project not initialized. Run `pmpt init` first.');
   }
 
-  const watchPaths = getWatchPaths(projectPath);
+  const docsDir = getDocsDir(projectPath);
 
-  // Build watch patterns for all paths
-  const watchPatterns = watchPaths.map(p => join(p, '**/*.md'));
-
-  // Watch all MD files in all watch paths
-  const watcher = chokidar.watch(watchPatterns, {
+  // Watch all MD files in docs folder
+  const watcher = chokidar.watch(join(docsDir, '**/*.md'), {
     ignoreInitial: true,
     persistent: true,
     awaitWriteFinish: {

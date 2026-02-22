@@ -1,7 +1,7 @@
 import * as p from '@clack/prompts';
 import { existsSync } from 'fs';
 import { resolve } from 'path';
-import { initializeProject, isInitialized, detectExistingFolders } from '../lib/config.js';
+import { initializeProject, isInitialized } from '../lib/config.js';
 import { isGitRepo, getGitInfo, formatGitInfo } from '../lib/git.js';
 import { cmdPlan } from './plan.js';
 
@@ -37,59 +37,12 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
     }
   }
 
-  // Detect existing AI tool folders
-  const existingFolders = detectExistingFolders(projectPath);
-  let additionalWatchPaths: string[] = [];
-
-  if (existingFolders.length > 0) {
-    p.log.info('Found existing AI/docs folders:');
-    for (const folder of existingFolders) {
-      p.log.message(`  • ${folder}/`);
-    }
-    p.log.message('');
-
-    const trackChoice = await p.confirm({
-      message: 'Track these folders alongside .pmpt/docs?',
-      initialValue: true,
-    });
-
-    if (p.isCancel(trackChoice)) {
-      p.cancel('Cancelled');
-      process.exit(0);
-    }
-
-    if (trackChoice) {
-      // Multi-select for folders to track
-      const folderOptions = existingFolders.map(folder => ({
-        value: folder,
-        label: folder,
-      }));
-
-      const selectedFolders = await p.multiselect({
-        message: 'Select folders to track (space to toggle, enter to confirm)',
-        options: folderOptions,
-        initialValues: existingFolders, // All selected by default
-      });
-
-      if (p.isCancel(selectedFolders)) {
-        p.cancel('Cancelled');
-        process.exit(0);
-      }
-
-      additionalWatchPaths = selectedFolders as string[];
-    }
-  }
-
   // Build confirmation message
   const confirmMessage = [
     `Initialize pmpt in this folder?`,
     `  Path: ${projectPath}`,
-    `  Docs: .pmpt/docs/ (pmpt-generated files)`,
+    `  Docs: .pmpt/docs/`,
   ];
-
-  if (additionalWatchPaths.length > 0) {
-    confirmMessage.push(`  Also tracking: ${additionalWatchPaths.join(', ')}`);
-  }
 
   if (isGit && gitInfo) {
     confirmMessage.push(`  Git: ${formatGitInfo(gitInfo)}`);
@@ -144,7 +97,6 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
     const config = initializeProject(projectPath, {
       repo: repoUrl,
       trackGit: isGit,
-      additionalWatchPaths,
     });
     s.stop('Initialized');
 
@@ -153,18 +105,11 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
       `Path: ${config.projectPath}`,
       '',
       'Folder structure:',
+      `  .pmpt/`,
+      `  ├── config.json     Config`,
+      `  ├── docs/           Your docs`,
+      `  └── .history/       Snapshots`,
     ];
-
-    if (additionalWatchPaths.length > 0) {
-      for (const folder of additionalWatchPaths) {
-        notes.push(`  ${folder}/           ← Tracked (read-only)`);
-      }
-    }
-
-    notes.push(`  .pmpt/`);
-    notes.push(`  ├── config.json     Config`);
-    notes.push(`  ├── docs/           Your docs (pmpt writes here)`);
-    notes.push(`  └── .history/       Snapshots`);
 
     if (config.repo) {
       notes.push('', `Repository: ${config.repo}`);
