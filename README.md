@@ -1,8 +1,14 @@
-# pmpt-cli
+# pmpt
 
-CLI tool for recording and sharing your AI-driven product development journey.
+**Record and share your AI-driven product development journey.**
+
+AI와 대화하며 제품을 만드는 여정을 기록하고 공유하세요.
+
+[![npm version](https://img.shields.io/npm/v/pmpt-cli.svg)](https://www.npmjs.com/package/pmpt-cli)
 
 **Website**: [pmptwiki.com](https://pmptwiki.com)
+
+---
 
 ## Install
 
@@ -10,57 +16,122 @@ CLI tool for recording and sharing your AI-driven product development journey.
 npm install -g pmpt-cli
 ```
 
+---
+
 ## Quick Start
 
 ```bash
-# Initialize project
+# 1. Initialize project
 pmpt init
 
-# Start product planning (6 questions → AI prompt)
+# 2. Answer 5 questions → AI prompt generated
 pmpt plan
 
-# Save snapshot manually
+# 3. Copy the prompt to Claude/ChatGPT/Cursor and build!
+
+# 4. Save your progress
 pmpt save
 
-# Or auto-detect file changes
-pmpt watch
-
-# View version history
-pmpt history
-pmpt history --compact   # Hide minor changes
-
-# Squash versions
-pmpt squash v2 v5        # Merge v2-v5 into v2
+# 5. Export & share
+pmpt export
 ```
 
-## Folder Structure
+---
 
-```
-.promptwiki/
-├── config.json           # Config file
-├── pmpt/                  # Working folder (MD files)
-└── .history/              # Version history
-```
+## Why pmpt?
 
-## Workflow
+- **5 questions** — Quick product planning with AI-ready prompts
+- **Version history** — Track every step of your AI-assisted development
+- **Share & reproduce** — Export `.pmpt` files for others to learn from
 
-1. `pmpt init` → Initialize project
-2. `pmpt plan` → Answer 6 questions → `pmpt.md` generated
-3. Copy `pmpt.md` to AI → Build with AI conversation
-4. `pmpt save` or `pmpt watch` → Save progress
-5. `pmpt submit` → Share to archive (coming soon)
+---
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `pmpt init` | Initialize project folder |
-| `pmpt plan` | Quick product planning with 6 questions |
+| `pmpt init` | Initialize project |
+| `pmpt plan` | 5 questions → AI prompt (copied to clipboard) |
 | `pmpt save` | Save current state as snapshot |
 | `pmpt watch` | Auto-detect file changes |
-| `pmpt status` | Check project status |
 | `pmpt history` | View version history |
-| `pmpt squash` | Merge multiple versions |
+| `pmpt history --compact` | Hide minor changes |
+| `pmpt squash v2 v5` | Merge versions v2-v5 into v2 |
+| `pmpt export` | Export as `.pmpt` file (single JSON) |
+| `pmpt import <file>` | Import from `.pmpt` file |
+| `pmpt status` | Check project status |
+
+---
+
+## Folder Structure
+
+```
+.pmpt/
+├── config.json           # Config file
+├── docs/                 # Working folder (MD files)
+│   ├── plan.md           # Product plan
+│   └── pmpt.md           # AI prompt
+└── .history/             # Version history
+    ├── v1-2024-02-20/
+    ├── v2-2024-02-21/
+    └── ...
+```
+
+---
+
+## Workflow
+
+```
+[You]
+  │
+  ├─ pmpt plan ────→ 5 questions → AI prompt (clipboard)
+  │
+  ├─ Build with AI ─→ Create files, iterate
+  │
+  ├─ pmpt save ────→ Save to .pmpt/.history
+  │
+  ├─ pmpt export ──→ Create .pmpt file (shareable)
+  │
+  └─ pmpt import ──→ Reproduce someone's project
+```
+
+---
+
+## .pmpt File Format
+
+Single JSON file containing your entire development journey:
+
+```json
+{
+  "schemaVersion": "1.0",
+  "meta": { "projectName", "description", "createdAt" },
+  "plan": { "productIdea", "coreFeatures", "techStack" },
+  "docs": { "plan.md": "...", "pmpt.md": "..." },
+  "history": [
+    { "version": 1, "timestamp": "...", "files": {...} },
+    { "version": 2, "timestamp": "...", "files": {...} }
+  ]
+}
+```
+
+---
+
+## Use Cases
+
+- **Side project builders** — Track your AI-assisted development
+- **Startup founders** — Document MVP creation process
+- **Content creators** — Share your coding journey
+- **Learners** — Study how others build with AI
+
+---
+
+## Links
+
+- [Website](https://pmptwiki.com)
+- [GitHub](https://github.com/promptwiki/cli)
+- [npm](https://www.npmjs.com/package/pmpt-cli)
+
+---
 
 ## License
 
