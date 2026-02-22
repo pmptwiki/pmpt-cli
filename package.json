@@ -4,7 +4,8 @@
   "description": "CLI tool for contributing to PromptWiki",
   "type": "module",
   "bin": {
-    "promptwiki": "./dist/index.js"
+    "promptwiki": "./dist/index.js",
+    "pmpt": "./dist/index.js"
   },
   "files": [
     "dist"
