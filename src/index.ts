@@ -11,6 +11,7 @@ import { cmdPlan } from './commands/plan.js';
 import { cmdSave } from './commands/save.js';
 import { cmdSquash } from './commands/squash.js';
 import { cmdExport } from './commands/export.js';
+import { cmdImport } from './commands/import.js';
 
 const program = new Command();
 
@@ -28,6 +29,7 @@ Examples:
   $ pmpt history --compact       Hide minor changes
   $ pmpt squash v2 v5            Merge versions v2-v5 into v2
   $ pmpt export                  Export history as shareable zip
+  $ pmpt import <file.zip>       Import project from zip
 
 Folder structure:
   .pmpt/
@@ -76,6 +78,12 @@ program
   .description('Export project history as a shareable zip archive')
   .option('-o, --output <file>', 'Output file path')
   .action(cmdExport);
+
+program
+  .command('import <file>')
+  .description('Import project from exported zip archive')
+  .option('-f, --force', 'Overwrite existing project')
+  .action(cmdImport);
 
 program
   .command('plan [path]')
