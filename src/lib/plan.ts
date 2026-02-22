@@ -104,7 +104,7 @@ I'll confirm progress at each step before moving to the next.
 
 ## Documentation Rule
 
-**Important:** Update this document (pmpt.md) at these moments:
+**Important:** Update this document (located at `.promptwiki/pmpt/pmpt.md`) at these moments:
 - When architecture or tech decisions are finalized
 - When a feature is implemented (mark as done)
 - When a development phase is completed

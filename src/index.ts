@@ -15,7 +15,7 @@ const program = new Command();
 program
   .name('pmpt')
   .description('PromptWiki CLI — Record and share your AI-driven product development journey')
-  .version('0.5.2')
+  .version('0.5.3')
   .addHelpText('after', `
 Examples:
   $ pmpt init                    Initialize project
