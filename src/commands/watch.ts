@@ -16,8 +16,13 @@ export function cmdWatch(path?: string): void {
   p.log.info('Markdown 파일 변경을 감지합니다...');
   p.log.info('종료하려면 Ctrl+C를 누르세요.');
 
-  const watcher = startWatching(projectPath, (file, version) => {
-    p.log.success(`${file} → v${version} 저장됨`);
+  const watcher = startWatching(projectPath, (file, version, git) => {
+    let msg = `${file} → v${version} 저장됨`;
+    if (git) {
+      msg += ` · ${git.commit}`;
+      if (git.dirty) msg += ' (uncommitted changes)';
+    }
+    p.log.success(msg);
   });
 
   process.on('SIGINT', () => {

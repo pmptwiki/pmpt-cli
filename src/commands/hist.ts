@@ -31,15 +31,20 @@ export function cmdHistory(path?: string): void {
   for (const [file, entries] of byFile) {
     p.note(
       entries
-        .map(
-          (e) =>
-            `  v${e.version} — ${new Date(e.timestamp).toLocaleString('ko-KR', {
-              month: '2-digit',
-              day: '2-digit',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}`
-        )
+        .map((e) => {
+          const dateStr = new Date(e.timestamp).toLocaleString('ko-KR', {
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+          let line = `  v${e.version} — ${dateStr}`;
+          if (e.git) {
+            line += ` · ${e.git.commit}`;
+            if (e.git.dirty) line += ' (dirty)';
+          }
+          return line;
+        })
         .join('\n'),
       file
     );

@@ -19,6 +19,7 @@ program
 program
   .command('init [path]')
   .description('프로젝트 폴더를 초기화하고 히스토리 추적을 시작합니다')
+  .option('-r, --repo <url>', 'GitHub 저장소 URL')
   .action(cmdInit);
 
 program

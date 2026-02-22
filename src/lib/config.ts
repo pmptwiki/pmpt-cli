@@ -7,6 +7,9 @@ export interface ProjectConfig {
   ignorePatterns: string[];
   createdAt: string;
   lastPublished?: string;
+  // Git 연동 설정
+  repo?: string;           // GitHub 저장소 URL
+  trackGit?: boolean;      // git 정보 자동 기록 여부 (기본 true)
 }
 
 const CONFIG_DIR = '.promptwiki';
@@ -25,7 +28,12 @@ export function isInitialized(projectPath: string): boolean {
   return existsSync(join(getConfigDir(projectPath), CONFIG_FILE));
 }
 
-export function initializeProject(projectPath: string): ProjectConfig {
+export interface InitOptions {
+  repo?: string;
+  trackGit?: boolean;
+}
+
+export function initializeProject(projectPath: string, options?: InitOptions): ProjectConfig {
   const configDir = getConfigDir(projectPath);
   const historyDir = getHistoryDir(projectPath);
 
@@ -37,6 +45,8 @@ export function initializeProject(projectPath: string): ProjectConfig {
     watchPatterns: ['**/*.md', '**/*.mdx'],
     ignorePatterns: ['node_modules/**', '.promptwiki/**', 'dist/**'],
     createdAt: new Date().toISOString(),
+    repo: options?.repo,
+    trackGit: options?.trackGit ?? true,
   };
 
   saveConfig(projectPath, config);

@@ -1,9 +1,9 @@
 import chokidar from 'chokidar';
 import { loadConfig } from './config.js';
-import { createSnapshot } from './history.js';
+import { createSnapshot, type HistoryEntry } from './history.js';
 import { readFileSync } from 'fs';
 
-export function startWatching(projectPath: string, onSnapshot?: (file: string, version: number) => void): chokidar.FSWatcher {
+export function startWatching(projectPath: string, onSnapshot?: (file: string, version: number, git?: HistoryEntry['git']) => void): chokidar.FSWatcher {
   const config = loadConfig(projectPath);
   if (!config) {
     throw new Error('Project not initialized. Run `promptwiki init` first.');
@@ -18,16 +18,16 @@ export function startWatching(projectPath: string, onSnapshot?: (file: string, v
 
   const fileContents = new Map<string, string>();
 
-  watcher.on('add', (path) => {
+  watcher.on('add', (path: string) => {
     const fullPath = `${projectPath}/${path}`;
     const content = readFileSync(fullPath, 'utf-8');
     fileContents.set(path, content);
 
     const entry = createSnapshot(projectPath, fullPath);
-    if (onSnapshot) onSnapshot(path, entry.version);
+    if (onSnapshot) onSnapshot(path, entry.version, entry.git);
   });
 
-  watcher.on('change', (path) => {
+  watcher.on('change', (path: string) => {
     const fullPath = `${projectPath}/${path}`;
     const newContent = readFileSync(fullPath, 'utf-8');
     const oldContent = fileContents.get(path);
@@ -36,7 +36,7 @@ export function startWatching(projectPath: string, onSnapshot?: (file: string, v
     if (oldContent !== newContent) {
       fileContents.set(path, newContent);
       const entry = createSnapshot(projectPath, fullPath);
-      if (onSnapshot) onSnapshot(path, entry.version);
+      if (onSnapshot) onSnapshot(path, entry.version, entry.git);
     }
   });
 

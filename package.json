@@ -9,7 +9,13 @@
   "files": [
     "dist"
   ],
-  "keywords": ["promptwiki", "cli", "prompt", "ai", "wiki"],
+  "keywords": [
+    "promptwiki",
+    "cli",
+    "prompt",
+    "ai",
+    "wiki"
+  ],
   "homepage": "https://pmptwiki.com",
   "repository": {
     "type": "git",
