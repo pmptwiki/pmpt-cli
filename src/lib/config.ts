@@ -3,8 +3,8 @@ import { join, isAbsolute } from 'path';
 
 export interface ProjectConfig {
   projectPath: string;
-  docsPath: string;           // 문서 폴더 경로 (상대 경로)
-  watchPatterns: string[];
+  docsPath: string;           // pmpt 생성 파일 위치 (항상 .pmpt/docs)
+  watchPaths: string[];       // 추적할 폴더들 (기존 폴더 + docsPath)
   ignorePatterns: string[];
   createdAt: string;
   lastPublished?: string;
@@ -35,16 +35,20 @@ export function getConfigDir(projectPath: string): string {
 }
 
 export function getDocsDir(projectPath: string): string {
+  // docsPath is always .pmpt/docs
+  return join(getConfigDir(projectPath), DEFAULT_DOCS_DIR);
+}
+
+// Get all watch paths (for tracking multiple folders)
+export function getWatchPaths(projectPath: string): string[] {
   const config = loadConfig(projectPath);
-  if (config?.docsPath) {
-    // If docsPath is absolute, use it; otherwise resolve relative to projectPath
-    if (isAbsolute(config.docsPath)) {
-      return config.docsPath;
-    }
-    return join(projectPath, config.docsPath);
+  if (config?.watchPaths) {
+    return config.watchPaths.map(p =>
+      isAbsolute(p) ? p : join(projectPath, p)
+    );
   }
   // Default fallback
-  return join(getConfigDir(projectPath), DEFAULT_DOCS_DIR);
+  return [getDocsDir(projectPath)];
 }
 
 // Alias for backward compatibility
@@ -89,37 +93,35 @@ export function detectExistingFolders(projectPath: string): string[] {
 export interface InitOptions {
   repo?: string;
   trackGit?: boolean;
-  docsPath?: string;  // Custom docs folder path
+  additionalWatchPaths?: string[];  // 추가로 추적할 기존 폴더들
 }
 
 export function initializeProject(projectPath: string, options?: InitOptions): ProjectConfig {
   const configDir = getConfigDir(projectPath);
   const historyDir = getHistoryDir(projectPath);
 
-  // Determine docs path
-  let docsPath: string;
-  if (options?.docsPath) {
-    // Use custom path
-    docsPath = options.docsPath;
-  } else {
-    // Default to .pmpt/docs
-    docsPath = join(CONFIG_DIR, DEFAULT_DOCS_DIR);
-  }
+  // docsPath is always .pmpt/docs (pmpt-generated files go here)
+  const docsPath = join(CONFIG_DIR, DEFAULT_DOCS_DIR);
 
   // Create directories
   mkdirSync(configDir, { recursive: true });
   mkdirSync(historyDir, { recursive: true });
+  mkdirSync(join(projectPath, docsPath), { recursive: true });
 
-  // Only create docs folder if it's the default one
-  if (!options?.docsPath) {
-    const fullDocsPath = join(projectPath, docsPath);
-    mkdirSync(fullDocsPath, { recursive: true });
+  // Build watchPaths: always include docsPath + any additional paths
+  const watchPaths = [docsPath];
+  if (options?.additionalWatchPaths) {
+    for (const p of options.additionalWatchPaths) {
+      if (!watchPaths.includes(p)) {
+        watchPaths.push(p);
+      }
+    }
   }
 
   const config: ProjectConfig = {
     projectPath,
     docsPath,
-    watchPatterns: [`${docsPath}/**/*.md`],
+    watchPaths,
     ignorePatterns: ['node_modules/**', '.pmpt/.history/**', 'dist/**'],
     createdAt: new Date().toISOString(),
     repo: options?.repo,

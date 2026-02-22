@@ -28,6 +28,9 @@ export function cmdStatus(path?: string): void {
 
   notes.push('');
   notes.push(`Docs folder: ${config!.docsPath}/`);
+  if (config!.watchPaths && config!.watchPaths.length > 1) {
+    notes.push(`Watching: ${config!.watchPaths.join(', ')}`);
+  }
   notes.push(`Snapshots: ${snapshots.length}`);
   notes.push('');
   notes.push(`Tracked files: ${tracked.length}`);

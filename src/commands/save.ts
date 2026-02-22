@@ -1,7 +1,7 @@
 import * as p from '@clack/prompts';
 import { resolve } from 'path';
 import { existsSync, statSync } from 'fs';
-import { isInitialized, getPmptDir } from '../lib/config.js';
+import { isInitialized, getWatchPaths } from '../lib/config.js';
 import { createFullSnapshot, getTrackedFiles } from '../lib/history.js';
 
 export async function cmdSave(fileOrPath?: string): Promise<void> {
@@ -16,13 +16,13 @@ export async function cmdSave(fileOrPath?: string): Promise<void> {
 
   p.intro('pmpt save');
 
-  const pmptDir = getPmptDir(projectPath);
+  const watchPaths = getWatchPaths(projectPath);
   const files = getTrackedFiles(projectPath);
 
   if (files.length === 0) {
     p.log.warn('No files to save.');
-    p.log.info(`pmpt folder: ${pmptDir}`);
-    p.log.info('Start with `pmpt plan` or add MD files to the pmpt folder.');
+    p.log.info(`Watching: ${watchPaths.join(', ')}`);
+    p.log.info('Start with `pmpt plan` or add MD files to the watched folders.');
     p.outro('');
     return;
   }

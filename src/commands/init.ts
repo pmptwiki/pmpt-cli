@@ -39,75 +39,56 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
 
   // Detect existing AI tool folders
   const existingFolders = detectExistingFolders(projectPath);
-  let selectedDocsPath: string | undefined;
+  let additionalWatchPaths: string[] = [];
 
   if (existingFolders.length > 0) {
-    p.log.info('Found existing folders that might contain your AI prompts/docs:');
+    p.log.info('Found existing AI/docs folders:');
     for (const folder of existingFolders) {
       p.log.message(`  • ${folder}/`);
     }
     p.log.message('');
 
-    const folderOptions = [
-      ...existingFolders.map(folder => ({
-        value: folder,
-        label: `Use ${folder}/`,
-        hint: 'Track existing files',
-      })),
-      {
-        value: '__new__',
-        label: 'Create new folder',
-        hint: '.pmpt/docs/ (default)',
-      },
-      {
-        value: '__custom__',
-        label: 'Enter custom path',
-        hint: 'Specify your own folder',
-      },
-    ];
-
-    const folderChoice = await p.select({
-      message: 'Which folder should pmpt track?',
-      options: folderOptions,
+    const trackChoice = await p.confirm({
+      message: 'Track these folders alongside .pmpt/docs?',
+      initialValue: true,
     });
 
-    if (p.isCancel(folderChoice)) {
+    if (p.isCancel(trackChoice)) {
       p.cancel('Cancelled');
       process.exit(0);
     }
 
-    if (folderChoice === '__custom__') {
-      const customPath = await p.text({
-        message: 'Enter the folder path to track',
-        placeholder: 'e.g., my-prompts, specs/ai',
-        validate: (value) => {
-          if (!value) return 'Please enter a folder path';
-          return undefined;
-        },
+    if (trackChoice) {
+      // Multi-select for folders to track
+      const folderOptions = existingFolders.map(folder => ({
+        value: folder,
+        label: folder,
+      }));
+
+      const selectedFolders = await p.multiselect({
+        message: 'Select folders to track (space to toggle, enter to confirm)',
+        options: folderOptions,
+        initialValues: existingFolders, // All selected by default
       });
 
-      if (p.isCancel(customPath)) {
+      if (p.isCancel(selectedFolders)) {
         p.cancel('Cancelled');
         process.exit(0);
       }
 
-      selectedDocsPath = customPath as string;
-    } else if (folderChoice !== '__new__') {
-      selectedDocsPath = folderChoice as string;
+      additionalWatchPaths = selectedFolders as string[];
     }
-    // If __new__, selectedDocsPath remains undefined (will use default)
   }
 
   // Build confirmation message
   const confirmMessage = [
     `Initialize pmpt in this folder?`,
     `  Path: ${projectPath}`,
+    `  Docs: .pmpt/docs/ (pmpt-generated files)`,
   ];
 
-  if (selectedDocsPath) {
-    confirmMessage.push(`  Docs: ${selectedDocsPath}/`);
-  } else {
-    confirmMessage.push(`  Docs: .pmpt/docs/ (new)`);
+  if (additionalWatchPaths.length > 0) {
+    confirmMessage.push(`  Also tracking: ${additionalWatchPaths.join(', ')}`);
   }
 
   if (isGit && gitInfo) {
@@ -163,31 +144,27 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
     const config = initializeProject(projectPath, {
       repo: repoUrl,
       trackGit: isGit,
-      docsPath: selectedDocsPath,
+      additionalWatchPaths,
     });
     s.stop('Initialized');
 
     // Build folder structure display
-    const docsDisplay = selectedDocsPath || '.pmpt/docs';
-    const isExternalDocs = selectedDocsPath && !selectedDocsPath.startsWith('.pmpt');
-
     const notes = [
       `Path: ${config.projectPath}`,
       '',
       'Folder structure:',
     ];
 
-    if (isExternalDocs) {
-      notes.push(`  ${docsDisplay}/         ← Your docs (tracked)`);
-      notes.push(`  .pmpt/`);
-      notes.push(`  ├── config.json     Config`);
-      notes.push(`  └── .history/       Snapshots`);
-    } else {
-      notes.push(`  .pmpt/`);
-      notes.push(`  ├── config.json     Config`);
-      notes.push(`  ├── docs/           Your docs`);
-      notes.push(`  └── .history/       Snapshots`);
+    if (additionalWatchPaths.length > 0) {
+      for (const folder of additionalWatchPaths) {
+        notes.push(`  ${folder}/           ← Tracked (read-only)`);
+      }
     }
+
+    notes.push(`  .pmpt/`);
+    notes.push(`  ├── config.json     Config`);
+    notes.push(`  ├── docs/           Your docs (pmpt writes here)`);
+    notes.push(`  └── .history/       Snapshots`);
 
     if (config.repo) {
       notes.push('', `Repository: ${config.repo}`);

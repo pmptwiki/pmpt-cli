@@ -1,7 +1,8 @@
 import chokidar from 'chokidar';
-import { loadConfig, getPmptDir } from './config.js';
+import { loadConfig, getWatchPaths } from './config.js';
 import { createFullSnapshot, type SnapshotEntry } from './history.js';
 import { readFileSync } from 'fs';
+import { join } from 'path';
 
 export function startWatching(
   projectPath: string,
@@ -12,11 +13,13 @@ export function startWatching(
     throw new Error('Project not initialized. Run `pmpt init` first.');
   }
 
-  const pmptDir = getPmptDir(projectPath);
+  const watchPaths = getWatchPaths(projectPath);
 
-  // Watch all MD files in pmpt folder
-  const watcher = chokidar.watch('**/*.md', {
-    cwd: pmptDir,
+  // Build watch patterns for all paths
+  const watchPatterns = watchPaths.map(p => join(p, '**/*.md'));
+
+  // Watch all MD files in all watch paths
+  const watcher = chokidar.watch(watchPatterns, {
     ignoreInitial: true,
     persistent: true,
     awaitWriteFinish: {
@@ -44,9 +47,8 @@ export function startWatching(
   };
 
   watcher.on('add', (path: string) => {
-    const fullPath = `${pmptDir}/${path}`;
     try {
-      const content = readFileSync(fullPath, 'utf-8');
+      const content = readFileSync(path, 'utf-8');
       fileContents.set(path, content);
       debouncedSave();
     } catch {
@@ -55,9 +57,8 @@ export function startWatching(
   });
 
   watcher.on('change', (path: string) => {
-    const fullPath = `${pmptDir}/${path}`;
     try {
-      const newContent = readFileSync(fullPath, 'utf-8');
+      const newContent = readFileSync(path, 'utf-8');
       const oldContent = fileContents.get(path);
 
       // Only snapshot if content actually changed

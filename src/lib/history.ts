@@ -1,6 +1,6 @@
 import { copyFileSync, existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync, statSync } from 'fs';
 import { basename, join, relative } from 'path';
-import { getHistoryDir, getPmptDir, loadConfig } from './config.js';
+import { getHistoryDir, getPmptDir, getWatchPaths, loadConfig } from './config.js';
 import { getGitInfo, isGitRepo, type GitInfo } from './git.js';
 import glob from 'fast-glob';
 
@@ -33,12 +33,12 @@ export interface HistoryEntry {
 }
 
 /**
- * pmpt 폴더 전체를 스냅샷으로 저장
+ * 모든 watchPaths 폴더의 MD 파일을 스냅샷으로 저장
  * .history/v{N}-{timestamp}/ 폴더에 모든 파일 복사
  */
 export function createFullSnapshot(projectPath: string): SnapshotEntry {
   const historyDir = getHistoryDir(projectPath);
-  const pmptDir = getPmptDir(projectPath);
+  const watchPaths = getWatchPaths(projectPath);
 
   mkdirSync(historyDir, { recursive: true });
 
@@ -52,24 +52,30 @@ export function createFullSnapshot(projectPath: string): SnapshotEntry {
 
   mkdirSync(snapshotDir, { recursive: true });
 
-  // pmpt 폴더의 모든 MD 파일 복사
+  // 모든 watchPaths의 MD 파일 복사
   const files: string[] = [];
 
-  if (existsSync(pmptDir)) {
-    const mdFiles = glob.sync('**/*.md', { cwd: pmptDir });
+  for (const watchPath of watchPaths) {
+    if (!existsSync(watchPath)) continue;
+
+    // Get relative path from project root for folder structure in snapshot
+    const relWatchPath = relative(projectPath, watchPath);
+    const mdFiles = glob.sync('**/*.md', { cwd: watchPath });
 
     for (const file of mdFiles) {
-      const srcPath = join(pmptDir, file);
-      const destPath = join(snapshotDir, file);
+      const srcPath = join(watchPath, file);
+      // Store with folder prefix to avoid conflicts
+      const destRelPath = join(relWatchPath, file);
+      const destPath = join(snapshotDir, destRelPath);
 
       // 하위 디렉토리가 있으면 생성
-      const destDir = join(snapshotDir, file.split('/').slice(0, -1).join('/'));
+      const destDir = join(snapshotDir, destRelPath.split('/').slice(0, -1).join('/'));
       if (destDir !== snapshotDir) {
         mkdirSync(destDir, { recursive: true });
       }
 
       copyFileSync(srcPath, destPath);
-      files.push(file);
+      files.push(destRelPath);
     }
   }
 
@@ -290,11 +296,22 @@ export function getAllHistory(projectPath: string): HistoryEntry[] {
 }
 
 /**
- * 추적 중인 파일 목록 (pmpt 폴더 기준)
+ * 추적 중인 파일 목록 (모든 watchPaths 기준)
  */
 export function getTrackedFiles(projectPath: string): string[] {
-  const pmptDir = getPmptDir(projectPath);
-  if (!existsSync(pmptDir)) return [];
+  const watchPaths = getWatchPaths(projectPath);
+  const files: string[] = [];
 
-  return glob.sync('**/*.md', { cwd: pmptDir });
+  for (const watchPath of watchPaths) {
+    if (!existsSync(watchPath)) continue;
+
+    const relWatchPath = relative(projectPath, watchPath);
+    const mdFiles = glob.sync('**/*.md', { cwd: watchPath });
+
+    for (const file of mdFiles) {
+      files.push(join(relWatchPath, file));
+    }
+  }
+
+  return files;
 }
