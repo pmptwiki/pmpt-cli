@@ -10,6 +10,7 @@ import { cmdWatch } from './commands/watch.js';
 import { cmdPlan } from './commands/plan.js';
 import { cmdSave } from './commands/save.js';
 import { cmdSquash } from './commands/squash.js';
+import { cmdExport } from './commands/export.js';
 
 const program = new Command();
 
@@ -20,12 +21,13 @@ program
   .addHelpText('after', `
 Examples:
   $ pmpt init                    Initialize project
-  $ pmpt plan                    Start product planning (6 questions → AI prompt)
+  $ pmpt plan                    Start product planning (5 questions → AI prompt)
   $ pmpt save                    Save snapshot of docs folder
   $ pmpt watch                   Auto-detect file changes
   $ pmpt history                 View version history
   $ pmpt history --compact       Hide minor changes
   $ pmpt squash v2 v5            Merge versions v2-v5 into v2
+  $ pmpt export                  Export history as shareable zip
 
 Folder structure:
   .pmpt/
@@ -70,8 +72,14 @@ program
   .action(cmdSquash);
 
 program
+  .command('export [path]')
+  .description('Export project history as a shareable zip archive')
+  .option('-o, --output <file>', 'Output file path')
+  .action(cmdExport);
+
+program
   .command('plan [path]')
-  .description('Quick product planning with 6 questions — auto-generate AI prompt')
+  .description('Quick product planning with 5 questions — auto-generate AI prompt')
   .option('--reset', 'Restart plan from scratch')
   .action(cmdPlan);
 
