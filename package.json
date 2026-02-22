@@ -1,6 +1,6 @@
 {
   "name": "promptwiki-cli",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Record and share your AI-driven product development journey",
   "type": "module",
   "bin": {

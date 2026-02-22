@@ -101,6 +101,23 @@ Please help me build this product based on the requirements above.
 4. Start coding from the first step.
 
 I'll confirm progress at each step before moving to the next.
+
+## Documentation Rule
+
+**Important:** Update this document (pmpt.md) at these moments:
+- When architecture or tech decisions are finalized
+- When a feature is implemented (mark as done)
+- When a development phase is completed
+- When requirements change or new decisions are made
+
+Add a "## Progress" section below and keep it updated:
+\`\`\`
+## Progress
+- [x] Completed item
+- [ ] Pending item
+\`\`\`
+
+This keeps a living record of our development journey.
 `;
 }
 
