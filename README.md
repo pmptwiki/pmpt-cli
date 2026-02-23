@@ -32,8 +32,9 @@ pmpt plan
 # 4. Save your progress
 pmpt save
 
-# 5. Export & share
-pmpt export
+# 5. Publish to pmptwiki
+pmpt login
+pmpt publish
 ```
 
 ---
@@ -42,11 +43,14 @@ pmpt export
 
 - **5 questions** — Quick product planning with AI-ready prompts
 - **Version history** — Track every step of your AI-assisted development
-- **Share & reproduce** — Export `.pmpt` files for others to learn from
+- **Share & reproduce** — Publish projects for others to learn from and clone
+- **Project hub** — Browse and clone projects at [pmptwiki.com](https://pmptwiki.com/en/explore)
 
 ---
 
 ## Commands
+
+### Local
 
 | Command | Description |
 |---------|-------------|
@@ -60,6 +64,33 @@ pmpt export
 | `pmpt export` | Export as `.pmpt` file (single JSON) |
 | `pmpt import <file>` | Import from `.pmpt` file |
 | `pmpt status` | Check project status |
+
+### Platform
+
+| Command | Description |
+|---------|-------------|
+| `pmpt login` | Authenticate with GitHub (one-time setup) |
+| `pmpt publish` | Publish project to pmptwiki |
+| `pmpt clone <slug>` | Clone a published project |
+| `pmpt browse` | Browse and discover projects |
+
+---
+
+## Workflow
+
+```
+[You]
+  │
+  ├─ pmpt plan ─────→ 5 questions → AI prompt (clipboard)
+  │
+  ├─ Build with AI ──→ Create files, iterate
+  │
+  ├─ pmpt save ─────→ Save to .pmpt/.history
+  │
+  ├─ pmpt publish ──→ Share on pmptwiki.com
+  │
+  └─ pmpt clone ────→ Reproduce someone's project
+```
 
 ---
 
@@ -79,24 +110,6 @@ pmpt export
 
 ---
 
-## Workflow
-
-```
-[You]
-  │
-  ├─ pmpt plan ────→ 5 questions → AI prompt (clipboard)
-  │
-  ├─ Build with AI ─→ Create files, iterate
-  │
-  ├─ pmpt save ────→ Save to .pmpt/.history
-  │
-  ├─ pmpt export ──→ Create .pmpt file (shareable)
-  │
-  └─ pmpt import ──→ Reproduce someone's project
-```
-
----
-
 ## .pmpt File Format
 
 Single JSON file containing your entire development journey:
@@ -104,12 +117,12 @@ Single JSON file containing your entire development journey:
 ```json
 {
   "schemaVersion": "1.0",
-  "meta": { "projectName", "description", "createdAt" },
-  "plan": { "productIdea", "coreFeatures", "techStack" },
+  "meta": { "projectName": "", "description": "", "createdAt": "" },
+  "plan": { "productIdea": "", "coreFeatures": "", "techStack": "" },
   "docs": { "plan.md": "...", "pmpt.md": "..." },
   "history": [
-    { "version": 1, "timestamp": "...", "files": {...} },
-    { "version": 2, "timestamp": "...", "files": {...} }
+    { "version": 1, "timestamp": "...", "files": {} },
+    { "version": 2, "timestamp": "...", "files": {} }
   ]
 }
 ```
@@ -121,13 +134,14 @@ Single JSON file containing your entire development journey:
 - **Side project builders** — Track your AI-assisted development
 - **Startup founders** — Document MVP creation process
 - **Content creators** — Share your coding journey
-- **Learners** — Study how others build with AI
+- **Learners** — Browse and clone projects to study how others build with AI
 
 ---
 
 ## Links
 
 - [Website](https://pmptwiki.com)
+- [Explore Projects](https://pmptwiki.com/en/explore)
 - [GitHub](https://github.com/pmptwiki/pmpt-cli)
 - [npm](https://www.npmjs.com/package/pmpt-cli)
 

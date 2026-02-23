@@ -22,7 +22,7 @@ const program = new Command();
 program
   .name('pmpt')
   .description('pmpt — Record and share your AI-driven product development journey')
-  .version('1.4.0')
+  .version('1.4.1')
   .addHelpText('after', `
 Examples:
   $ pmpt init                    Initialize project
