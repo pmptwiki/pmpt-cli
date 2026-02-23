@@ -3,24 +3,24 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 
 export interface GitInfo {
-  repo?: string;         // 원격 저장소 URL
-  commit: string;        // 현재 커밋 해시 (short)
-  commitFull: string;    // 전체 커밋 해시
-  branch: string;        // 현재 브랜치
-  dirty: boolean;        // uncommitted 변경 있음
-  timestamp: string;     // 커밋 타임스탬프
-  tag?: string;          // 현재 커밋의 태그 (있으면)
+  repo?: string;         // Remote repository URL
+  commit: string;        // Current commit hash (short)
+  commitFull: string;    // Full commit hash
+  branch: string;        // Current branch
+  dirty: boolean;        // Has uncommitted changes
+  timestamp: string;     // Commit timestamp
+  tag?: string;          // Tag of current commit (if any)
 }
 
 /**
- * 디렉토리가 git 저장소인지 확인
+ * Check if directory is a git repository
  */
 export function isGitRepo(path: string): boolean {
   return existsSync(join(path, '.git'));
 }
 
 /**
- * git 명령어 실행 헬퍼
+ * Git command execution helper
  */
 function git(path: string, args: string): string | null {
   try {
@@ -35,38 +35,38 @@ function git(path: string, args: string): string | null {
 }
 
 /**
- * 현재 git 상태 정보 수집
+ * Collect current git status info
  */
 export function getGitInfo(path: string, remoteUrl?: string): GitInfo | null {
   if (!isGitRepo(path)) {
     return null;
   }
 
-  // 커밋 해시
+  // Commit hash
   const commitFull = git(path, 'rev-parse HEAD');
   if (!commitFull) return null;
 
   const commit = git(path, 'rev-parse --short HEAD') || commitFull.slice(0, 7);
 
-  // 브랜치
+  // Branch
   const branch = git(path, 'rev-parse --abbrev-ref HEAD') || 'HEAD';
 
-  // uncommitted 변경 확인
+  // Check uncommitted changes
   const status = git(path, 'status --porcelain');
   const dirty = status !== null && status.length > 0;
 
-  // 커밋 타임스탬프
+  // Commit timestamp
   const timestamp = git(path, 'log -1 --format=%cI') || new Date().toISOString();
 
-  // 현재 커밋의 태그
+  // Current commit tag
   const tag = git(path, 'describe --tags --exact-match 2>/dev/null') || undefined;
 
-  // 원격 저장소 URL (제공되지 않으면 origin에서 가져옴)
+  // Remote repository URL (fetched from origin if not provided)
   let repo = remoteUrl;
   if (!repo) {
     const origin = git(path, 'remote get-url origin');
     if (origin) {
-      // SSH URL을 HTTPS로 변환
+      // Convert SSH URL to HTTPS
       repo = origin
         .replace(/^git@github\.com:/, 'https://github.com/')
         .replace(/\.git$/, '');
@@ -85,7 +85,7 @@ export function getGitInfo(path: string, remoteUrl?: string): GitInfo | null {
 }
 
 /**
- * git 상태가 clean한지 확인
+ * Check if git status is clean
  */
 export function isGitClean(path: string): boolean {
   const status = git(path, 'status --porcelain');
@@ -93,7 +93,7 @@ export function isGitClean(path: string): boolean {
 }
 
 /**
- * 특정 커밋이 현재 커밋과 일치하는지 확인
+ * Check if specific commit matches current commit
  */
 export function isCommitMatch(path: string, expectedCommit: string): boolean {
   const currentFull = git(path, 'rev-parse HEAD');
@@ -110,7 +110,7 @@ export function isCommitMatch(path: string, expectedCommit: string): boolean {
 }
 
 /**
- * git 정보를 사람이 읽기 쉬운 문자열로 변환
+ * Convert git info to human-readable string
  */
 export function formatGitInfo(info: GitInfo): string {
   const parts = [

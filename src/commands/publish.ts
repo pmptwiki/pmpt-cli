@@ -26,13 +26,13 @@ export async function cmdPublish(path?: string): Promise<void> {
   const projectPath = path ? resolve(path) : process.cwd();
 
   if (!isInitialized(projectPath)) {
-    p.log.error('프로젝트가 초기화되지 않았습니다. `pmpt init`을 먼저 실행하세요.');
+    p.log.error('Project not initialized. Run `pmpt init` first.');
     process.exit(1);
   }
 
   const auth = loadAuth();
   if (!auth?.token || !auth?.username) {
-    p.log.error('로그인이 필요합니다. `pmpt login`을 먼저 실행하세요.');
+    p.log.error('Login required. Run `pmpt login` first.');
     process.exit(1);
   }
 
@@ -43,7 +43,7 @@ export async function cmdPublish(path?: string): Promise<void> {
   const planProgress = getPlanProgress(projectPath);
 
   if (snapshots.length === 0) {
-    p.log.warn('스냅샷이 없습니다. `pmpt save` 또는 `pmpt plan`을 먼저 실행하세요.');
+    p.log.warn('No snapshots found. Run `pmpt save` or `pmpt plan` first.');
     p.outro('');
     return;
   }
@@ -52,29 +52,29 @@ export async function cmdPublish(path?: string): Promise<void> {
 
   // Collect publish info
   const slug = await p.text({
-    message: '프로젝트 slug (URL에 사용될 이름):',
+    message: 'Project slug (used in URL):',
     placeholder: projectName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-'),
     validate: (v) => {
       if (!/^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/.test(v)) {
-        return '3~50자, 소문자/숫자/하이픈만 사용 가능합니다.';
+        return '3-50 chars, lowercase letters, numbers, and hyphens only.';
       }
     },
   });
-  if (p.isCancel(slug)) { p.cancel('취소됨'); process.exit(0); }
+  if (p.isCancel(slug)) { p.cancel('Cancelled'); process.exit(0); }
 
   const description = await p.text({
-    message: '프로젝트 설명 (짧게):',
+    message: 'Project description (brief):',
     placeholder: planProgress?.answers?.productIdea?.slice(0, 100) || '',
     defaultValue: planProgress?.answers?.productIdea?.slice(0, 200) || '',
   });
-  if (p.isCancel(description)) { p.cancel('취소됨'); process.exit(0); }
+  if (p.isCancel(description)) { p.cancel('Cancelled'); process.exit(0); }
 
   const tagsInput = await p.text({
-    message: '태그 (쉼표로 구분):',
+    message: 'Tags (comma-separated):',
     placeholder: 'react, saas, mvp',
     defaultValue: '',
   });
-  if (p.isCancel(tagsInput)) { p.cancel('취소됨'); process.exit(0); }
+  if (p.isCancel(tagsInput)) { p.cancel('Cancelled'); process.exit(0); }
 
   const tags = (tagsInput as string)
     .split(',')
@@ -82,19 +82,19 @@ export async function cmdPublish(path?: string): Promise<void> {
     .filter(Boolean);
 
   const category = await p.select({
-    message: '프로젝트 카테고리:',
+    message: 'Project category:',
     options: [
-      { value: 'web-app',     label: '웹 앱 (Web App)' },
-      { value: 'mobile-app',  label: '모바일 앱 (Mobile App)' },
-      { value: 'cli-tool',    label: 'CLI 도구 (CLI Tool)' },
-      { value: 'api-backend', label: 'API/백엔드 (API/Backend)' },
+      { value: 'web-app',     label: 'Web App' },
+      { value: 'mobile-app',  label: 'Mobile App' },
+      { value: 'cli-tool',    label: 'CLI Tool' },
+      { value: 'api-backend', label: 'API/Backend' },
       { value: 'ai-ml',       label: 'AI/ML' },
-      { value: 'game',        label: '게임 (Game)' },
-      { value: 'library',     label: '라이브러리 (Library)' },
-      { value: 'other',       label: '기타 (Other)' },
+      { value: 'game',        label: 'Game' },
+      { value: 'library',     label: 'Library' },
+      { value: 'other',       label: 'Other' },
     ],
   });
-  if (p.isCancel(category)) { p.cancel('취소됨'); process.exit(0); }
+  if (p.isCancel(category)) { p.cancel('Cancelled'); process.exit(0); }
 
   // Build .pmpt content (resolve from optimized snapshots)
   const history: Version[] = snapshots.map((snapshot, i) => ({
@@ -142,17 +142,17 @@ export async function cmdPublish(path?: string): Promise<void> {
   );
 
   const confirm = await p.confirm({
-    message: '게시하시겠습니까?',
+    message: 'Publish this project?',
     initialValue: true,
   });
   if (p.isCancel(confirm) || !confirm) {
-    p.cancel('취소됨');
+    p.cancel('Cancelled');
     process.exit(0);
   }
 
   // Upload
   const s = p.spinner();
-  s.start('업로드 중...');
+  s.start('Uploading...');
 
   try {
     const result = await publishProject(auth.token, {
@@ -163,7 +163,7 @@ export async function cmdPublish(path?: string): Promise<void> {
       category: category as string,
     });
 
-    s.stop('게시 완료!');
+    s.stop('Published!');
 
     // Update config
     if (config) {
@@ -176,13 +176,13 @@ export async function cmdPublish(path?: string): Promise<void> {
         `URL: ${result.url}`,
         `Download: ${result.downloadUrl}`,
         '',
-        `pmpt clone ${slug}  — 다른 사람이 이 프로젝트를 복제할 수 있습니다`,
+        `pmpt clone ${slug}  — others can clone this project`,
       ].join('\n'),
       'Published!'
     );
   } catch (err) {
-    s.stop('게시 실패');
-    p.log.error(err instanceof Error ? err.message : '게시에 실패했습니다.');
+    s.stop('Publish failed');
+    p.log.error(err instanceof Error ? err.message : 'Failed to publish.');
     process.exit(1);
   }
 

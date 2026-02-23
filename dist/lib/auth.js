@@ -7,7 +7,10 @@ export function loadAuth() {
     try {
         if (!existsSync(TOKEN_FILE))
             return null;
-        return JSON.parse(readFileSync(TOKEN_FILE, 'utf-8'));
+        const data = JSON.parse(readFileSync(TOKEN_FILE, 'utf-8'));
+        if (!data.token || !data.username)
+            return null;
+        return { token: data.token, username: data.username };
     }
     catch {
         return null;

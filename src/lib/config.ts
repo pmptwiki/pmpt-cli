@@ -3,11 +3,11 @@ import { join } from 'path';
 
 export interface ProjectConfig {
   projectPath: string;
-  docsPath: string;           // 문서 폴더 경로 (항상 .pmpt/docs)
+  docsPath: string;           // docs folder path (always .pmpt/docs)
   ignorePatterns: string[];
   createdAt: string;
   lastPublished?: string;
-  // Git 연동 설정
+  // Git integration settings
   repo?: string;
   trackGit?: boolean;
 }

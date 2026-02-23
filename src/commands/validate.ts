@@ -2,12 +2,12 @@ import * as p from '@clack/prompts';
 import { validate } from '../lib/schema.js';
 
 export function cmdValidate(filePath: string): boolean {
-  p.intro(`pmptwiki — 검증: ${filePath}`);
+  p.intro(`pmptwiki — validate: ${filePath}`);
 
   const result = validate(filePath);
 
   if (result.errors.length === 0 && result.warnings.length === 0) {
-    p.outro('모든 검증 통과');
+    p.outro('All validations passed');
     return true;
   }
 
@@ -19,9 +19,9 @@ export function cmdValidate(filePath: string): boolean {
   }
 
   if (result.valid) {
-    p.outro(`검증 통과 (경고 ${result.warnings.length}개)`);
+    p.outro(`Validation passed (${result.warnings.length} warnings)`);
   } else {
-    p.outro(`검증 실패 (오류 ${result.errors.length}개) — 수정 후 다시 시도하세요`);
+    p.outro(`Validation failed (${result.errors.length} errors) — fix and retry`);
   }
 
   return result.valid;

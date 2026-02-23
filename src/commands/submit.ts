@@ -14,53 +14,53 @@ import { validate } from '../lib/schema.js';
 import { today } from '../lib/template.js';
 
 export async function cmdSubmit(filePath: string): Promise<void> {
-  p.intro(`pmptwiki — 제출: ${filePath}`);
+  p.intro(`pmptwiki — submit: ${filePath}`);
 
-  // 1. 검증
+  // 1. Validate
   const s1 = p.spinner();
-  s1.start('파일 검증 중...');
+  s1.start('Validating file...');
   const result = validate(filePath);
   if (!result.valid) {
-    s1.stop('검증 실패');
+    s1.stop('Validation failed');
     for (const err of result.errors) p.log.error(err);
-    p.outro('오류를 수정한 후 다시 시도하세요: pmpt validate ' + filePath);
+    p.outro('Fix errors and retry: pmpt validate ' + filePath);
     process.exit(1);
   }
-  s1.stop(`검증 통과${result.warnings.length ? ` (경고 ${result.warnings.length}개)` : ''}`);
+  s1.stop(`Validation passed${result.warnings.length ? ` (${result.warnings.length} warnings)` : ''}`);
   for (const warn of result.warnings) p.log.warn(warn);
 
-  // 2. 인증
+  // 2. Auth
   let auth = loadAuth();
   if (!auth) {
-    p.log.info('GitHub 인증이 필요합니다.');
+    p.log.info('GitHub authentication required.');
     p.log.info(
-      'Personal Access Token을 발급하세요:\n  https://github.com/settings/tokens/new\n  필요 권한: repo (전체)'
+      'Create a Personal Access Token:\n  https://github.com/settings/tokens/new\n  Required scope: repo (full)'
     );
 
     const token = await p.password({
-      message: 'GitHub PAT를 입력하세요:',
-      validate: (v) => (v.trim().length < 10 ? '올바른 토큰을 입력하세요' : undefined),
+      message: 'Enter your GitHub PAT:',
+      validate: (v) => (v.trim().length < 10 ? 'Please enter a valid token' : undefined),
     });
-    if (p.isCancel(token)) { p.cancel('취소됨'); process.exit(0); }
+    if (p.isCancel(token)) { p.cancel('Cancelled'); process.exit(0); }
 
     const s2 = p.spinner();
-    s2.start('인증 확인 중...');
+    s2.start('Verifying authentication...');
     try {
       const octokit = createClient(token as string);
       const username = await getAuthUser(octokit);
       saveAuth({ token: token as string, username });
       auth = { token: token as string, username };
-      s2.stop(`인증 완료 — @${username}`);
+      s2.stop(`Authenticated — @${username}`);
     } catch {
-      s2.stop('인증 실패');
-      p.outro('토큰이 올바르지 않습니다. 다시 시도하세요');
+      s2.stop('Authentication failed');
+      p.outro('Invalid token. Please try again');
       process.exit(1);
     }
   }
 
   const octokit = createClient(auth.token);
 
-  // 3. 브랜치명 생성
+  // 3. Generate branch name
   const { data: fm } = matter(readFileSync(filePath, 'utf-8'));
   const slug = filePath
     .replace(/^.*?(?=ko\/|en\/)/, '')
@@ -68,22 +68,22 @@ export async function cmdSubmit(filePath: string): Promise<void> {
     .replace(/\//g, '-');
   const branchName = `content/${slug}-${today()}`;
 
-  // 4. fork 확인 / 생성
+  // 4. Check / create fork
   const s3 = p.spinner();
-  s3.start('Fork 확인 중...');
+  s3.start('Checking fork...');
   await ensureFork(octokit, auth.username);
-  s3.stop('Fork 준비 완료');
+  s3.stop('Fork ready');
 
-  // 5. 브랜치 생성
+  // 5. Create branch
   const s4 = p.spinner();
-  s4.start(`브랜치 생성 중: ${branchName}`);
+  s4.start(`Creating branch: ${branchName}`);
   await createBranch(octokit, auth.username, branchName);
-  s4.stop('브랜치 생성 완료');
+  s4.stop('Branch created');
 
-  // 6. 파일 push
+  // 6. Push file
   const repoPath = filePath.replace(/^.*?(?=ko\/|en\/)/, '');
   const s5 = p.spinner();
-  s5.start('파일 업로드 중...');
+  s5.start('Uploading file...');
   await pushFile(
     octokit,
     auth.username,
@@ -92,36 +92,36 @@ export async function cmdSubmit(filePath: string): Promise<void> {
     filePath,
     `docs: add ${repoPath}`
   );
-  s5.stop('파일 업로드 완료');
+  s5.stop('File uploaded');
 
-  // 7. PR 생성
+  // 7. Create PR
   const prTitle = fm.purpose
     ? `[${fm.purpose}] ${fm.title}`
     : fm.title;
 
   const prBody = [
-    `## 문서 정보`,
-    `- **제목**: ${fm.title}`,
-    `- **유형**: ${fm.purpose ?? '-'}`,
-    `- **난이도**: ${fm.level ?? '-'}`,
-    `- **언어**: ${fm.lang ?? '-'}`,
-    fm.tags?.length ? `- **태그**: ${fm.tags.map((t: string) => `\`${t}\``).join(' ')}` : null,
+    `## Document Info`,
+    `- **Title**: ${fm.title}`,
+    `- **Type**: ${fm.purpose ?? '-'}`,
+    `- **Level**: ${fm.level ?? '-'}`,
+    `- **Language**: ${fm.lang ?? '-'}`,
+    fm.tags?.length ? `- **Tags**: ${fm.tags.map((t: string) => `\`${t}\``).join(' ')}` : null,
     ``,
-    `## 체크리스트`,
-    `- [ ] 본문이 명확하고 실용적인가?`,
-    `- [ ] 예시가 포함되어 있는가?`,
-    `- [ ] 제목과 내용이 일치하는가?`,
+    `## Checklist`,
+    `- [ ] Is the content clear and practical?`,
+    `- [ ] Are examples included?`,
+    `- [ ] Does the title match the content?`,
     ``,
     `---`,
-    `_pmpt-cli로 제출됨_`,
+    `_Submitted via pmpt-cli_`,
   ]
     .filter((l) => l !== null)
     .join('\n');
 
   const s6 = p.spinner();
-  s6.start('PR 생성 중...');
+  s6.start('Creating PR...');
   const prUrl = await createPR(octokit, auth.username, branchName, prTitle, prBody);
-  s6.stop('PR 생성 완료');
+  s6.stop('PR created');
 
-  p.outro(`제출 완료!\n\n  PR: ${prUrl}\n\n리뷰 후 머지되면 pmptwiki.com에 자동으로 반영됩니다.`);
+  p.outro(`Submitted!\n\n  PR: ${prUrl}\n\nOnce reviewed and merged, it will be published on pmptwiki.com.`);
 }

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import matter from 'gray-matter';
 import { readFileSync } from 'fs';
 const frontmatterSchema = z.object({
-    title: z.string().min(5, '제목은 5자 이상이어야 합니다'),
+    title: z.string().min(5, 'Title must be at least 5 characters'),
     purpose: z.enum(['guide', 'rule', 'template', 'example', 'reference']),
     level: z.enum(['beginner', 'intermediate', 'advanced']),
     lang: z.enum(['ko', 'en']),
@@ -18,21 +18,21 @@ const FILE_PATH_RE = /^(ko|en)\/(guide|rule|template|example|reference)\/(beginn
 export function validate(filePath) {
     const errors = [];
     const warnings = [];
-    // 1. 파일 경로 규칙
+    // 1. File path rules
     const relative = filePath.replace(/^.*?(?=ko\/|en\/)/, '');
     if (!FILE_PATH_RE.test(relative)) {
-        errors.push(`파일 경로가 규칙에 맞지 않습니다: {lang}/{purpose}/{level}/파일명.md`);
+        errors.push(`File path does not match: {lang}/{purpose}/{level}/filename.md`);
     }
-    // 2. 파일 읽기
+    // 2. Read file
     let raw;
     try {
         raw = readFileSync(filePath, 'utf-8');
     }
     catch {
-        errors.push('파일을 읽을 수 없습니다');
+        errors.push('Cannot read file');
         return { valid: false, errors, warnings };
     }
-    // 3. frontmatter 파싱
+    // 3. Parse frontmatter
     const { data, content } = matter(raw);
     const result = frontmatterSchema.safeParse(data);
     if (!result.success) {
@@ -41,17 +41,17 @@ export function validate(filePath) {
             errors.push(`[${field}] ${issue.message}`);
         }
     }
-    // 4. 본문 길이
+    // 4. Body length
     const bodyLength = content.trim().length;
     if (bodyLength < 200) {
-        errors.push(`본문이 너무 짧습니다 (현재 ${bodyLength}자, 최소 200자)`);
+        errors.push(`Content too short (${bodyLength} chars, minimum 200)`);
     }
-    // 5. 경고
+    // 5. Warnings
     if (!data.tags || data.tags.length === 0) {
-        warnings.push('tags를 추가하면 검색과 관련 문서 연결에 도움이 됩니다');
+        warnings.push('Adding tags helps with search and related document links');
     }
     if (!data.persona) {
-        warnings.push('persona를 지정하면 대상 독자가 명확해집니다');
+        warnings.push('Specifying a persona clarifies the target audience');
     }
     return {
         valid: errors.length === 0,

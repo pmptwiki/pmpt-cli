@@ -31,7 +31,7 @@ export function generateContent(fm) {
         .filter(Boolean)
         .join('\n');
     const body = fm.lang === 'ko'
-        ? `\n## 왜 중요한가\n\n<!-- 이 문서가 필요한 이유를 설명하세요 -->\n\n## 방법\n\n<!-- 단계별로 설명하세요 -->\n\n## 예시\n\n<!-- 실제 예시를 추가하세요 -->\n`
+        ? `\n## Why It Matters\n\n<!-- Explain why this document is needed -->\n\n## How To\n\n<!-- Explain step by step -->\n\n## Examples\n\n<!-- Add real examples -->\n`
         : `\n## Why it matters\n\n<!-- Explain why this document is needed -->\n\n## How to\n\n<!-- Explain step by step -->\n\n## Example\n\n<!-- Add a real example -->\n`;
     return frontmatter + body;
 }

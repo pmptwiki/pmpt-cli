@@ -5,30 +5,30 @@ export async function cmdBrowse(): Promise<void> {
   p.intro('pmpt browse');
 
   const s = p.spinner();
-  s.start('프로젝트 목록 불러오는 중...');
+  s.start('Loading projects...');
 
   let projects: ProjectEntry[];
   try {
     const index = await fetchProjects();
     projects = index.projects;
   } catch (err) {
-    s.stop('불러오기 실패');
-    p.log.error(err instanceof Error ? err.message : '프로젝트 목록을 불러올 수 없습니다.');
+    s.stop('Failed to load');
+    p.log.error(err instanceof Error ? err.message : 'Could not load project list.');
     process.exit(1);
   }
 
-  s.stop(`${projects.length}개 프로젝트`);
+  s.stop(`${projects.length} projects`);
 
   if (projects.length === 0) {
-    p.log.info('아직 공개된 프로젝트가 없습니다.');
-    p.log.message('  pmpt publish  — 첫 번째 프로젝트를 공유해보세요!');
+    p.log.info('No published projects yet.');
+    p.log.message('  pmpt publish  — share your first project!');
     p.outro('');
     return;
   }
 
   // Select project
   const selected = await p.select({
-    message: '프로젝트를 선택하세요:',
+    message: 'Select a project:',
     options: projects.map((proj) => ({
       value: proj.slug,
       label: proj.projectName,
@@ -59,11 +59,11 @@ export async function cmdBrowse(): Promise<void> {
 
   // Action
   const action = await p.select({
-    message: '어떻게 할까요?',
+    message: 'What would you like to do?',
     options: [
-      { value: 'clone', label: '이 프로젝트 복제', hint: 'pmpt clone' },
-      { value: 'url', label: 'URL 표시', hint: '브라우저에서 보기' },
-      { value: 'back', label: '돌아가기' },
+      { value: 'clone', label: 'Clone this project', hint: 'pmpt clone' },
+      { value: 'url', label: 'Show URL', hint: 'View in browser' },
+      { value: 'back', label: 'Go back' },
     ],
   });
 
@@ -82,7 +82,7 @@ export async function cmdBrowse(): Promise<void> {
     const url = `https://pmptwiki.com/ko/p/${project.slug}`;
     p.log.info(`URL: ${url}`);
     p.log.message(`Download: ${project.downloadUrl}`);
-    p.log.message(`\npmpt clone ${project.slug}  — 터미널에서 복제`);
+    p.log.message(`\npmpt clone ${project.slug}  — clone via terminal`);
     p.outro('');
   }
 }

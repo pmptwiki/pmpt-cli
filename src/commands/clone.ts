@@ -58,35 +58,35 @@ export function restoreDocs(docsDir: string, docs: Record<string, string>): void
 
 export async function cmdClone(slug: string): Promise<void> {
   if (!slug) {
-    p.log.error('slug를 입력하세요.');
-    p.log.info('사용법: pmpt clone <slug>');
+    p.log.error('Please provide a slug.');
+    p.log.info('Usage: pmpt clone <slug>');
     process.exit(1);
   }
 
   p.intro(`pmpt clone — ${slug}`);
 
   const s = p.spinner();
-  s.start('프로젝트 다운로드 중...');
+  s.start('Downloading project...');
 
   let fileContent: string;
   try {
     fileContent = await fetchPmptFile(slug);
   } catch (err) {
-    s.stop('다운로드 실패');
-    p.log.error(err instanceof Error ? err.message : '프로젝트를 찾을 수 없습니다.');
+    s.stop('Download failed');
+    p.log.error(err instanceof Error ? err.message : 'Project not found.');
     process.exit(1);
   }
 
-  s.message('검증 중...');
+  s.message('Validating...');
   const validation = validatePmptFile(fileContent);
   if (!validation.success || !validation.data) {
-    s.stop('검증 실패');
-    p.log.error(validation.error || '잘못된 .pmpt 파일입니다.');
+    s.stop('Validation failed');
+    p.log.error(validation.error || 'Invalid .pmpt file.');
     process.exit(1);
   }
 
   const pmptData = validation.data;
-  s.stop('다운로드 완료');
+  s.stop('Download complete');
 
   // Show summary
   p.note(
@@ -103,18 +103,18 @@ export async function cmdClone(slug: string): Promise<void> {
 
   if (isInitialized(projectPath)) {
     const overwrite = await p.confirm({
-      message: '이미 초기화된 프로젝트입니다. 히스토리를 병합하시겠습니까?',
+      message: 'Project already initialized. Merge history?',
       initialValue: true,
     });
 
     if (p.isCancel(overwrite) || !overwrite) {
-      p.cancel('취소됨');
+      p.cancel('Cancelled');
       process.exit(0);
     }
   }
 
   const importSpinner = p.spinner();
-  importSpinner.start('프로젝트 복원 중...');
+  importSpinner.start('Restoring project...');
 
   if (!isInitialized(projectPath)) {
     initializeProject(projectPath, { trackGit: true });
@@ -148,7 +148,7 @@ export async function cmdClone(slug: string): Promise<void> {
     versionCount = readdirSync(historyDir).filter((d) => d.startsWith('v')).length;
   }
 
-  importSpinner.stop('복원 완료!');
+  importSpinner.stop('Restore complete!');
 
   p.note(
     [
@@ -159,10 +159,10 @@ export async function cmdClone(slug: string): Promise<void> {
     'Clone Summary'
   );
 
-  p.log.info('다음 단계:');
-  p.log.message('  pmpt history    — 버전 히스토리 보기');
-  p.log.message('  pmpt plan       — AI 프롬프트 보기');
-  p.log.message('  pmpt save       — 새 스냅샷 저장');
+  p.log.info('Next steps:');
+  p.log.message('  pmpt history    — view version history');
+  p.log.message('  pmpt plan       — view AI prompt');
+  p.log.message('  pmpt save       — save a new snapshot');
 
-  p.outro('프로젝트가 복제되었습니다!');
+  p.outro('Project cloned!');
 }

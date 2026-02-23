@@ -9,7 +9,7 @@ export async function getAuthUser(octokit) {
     const { data } = await octokit.rest.users.getAuthenticated();
     return data.login;
 }
-/** fork가 없으면 생성, 있으면 그대로 반환 */
+/** Create fork if not exists, otherwise return existing */
 export async function ensureFork(octokit, username) {
     try {
         await octokit.rest.repos.get({ owner: username, repo: CONTENT_REPO });
@@ -19,13 +19,13 @@ export async function ensureFork(octokit, username) {
             owner: CONTENT_OWNER,
             repo: CONTENT_REPO,
         });
-        // fork 생성은 비동기 - 잠시 대기
+        // Fork creation is async - wait briefly
         await new Promise((r) => setTimeout(r, 3000));
     }
 }
-/** 브랜치 생성 (upstream main 기준) */
+/** Create branch (based on upstream main) */
 export async function createBranch(octokit, username, branchName) {
-    // upstream main의 sha 가져오기
+    // Get sha of upstream main
     const { data: ref } = await octokit.rest.git.getRef({
         owner: CONTENT_OWNER,
         repo: CONTENT_REPO,
@@ -39,10 +39,10 @@ export async function createBranch(octokit, username, branchName) {
         sha,
     });
 }
-/** 파일을 fork의 브랜치에 커밋 */
+/** Commit file to fork branch */
 export async function pushFile(octokit, username, branchName, filePath, localFilePath, commitMessage) {
     const content = Buffer.from(readFileSync(localFilePath, 'utf-8')).toString('base64');
-    // 기존 파일 sha 확인 (update용)
+    // Check existing file sha (for update)
     let sha;
     try {
         const { data } = await octokit.rest.repos.getContent({
@@ -55,7 +55,7 @@ export async function pushFile(octokit, username, branchName, filePath, localFil
             sha = data.sha;
     }
     catch {
-        // 신규 파일
+        // New file
     }
     await octokit.rest.repos.createOrUpdateFileContents({
         owner: username,
@@ -67,7 +67,7 @@ export async function pushFile(octokit, username, branchName, filePath, localFil
         ...(sha ? { sha } : {}),
     });
 }
-/** upstream으로 PR 생성 */
+/** Create PR to upstream */
 export async function createPR(octokit, username, branchName, title, body) {
     const { data } = await octokit.rest.pulls.create({
         owner: CONTENT_OWNER,
