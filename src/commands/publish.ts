@@ -81,6 +81,21 @@ export async function cmdPublish(path?: string): Promise<void> {
     .map((t) => t.trim().toLowerCase())
     .filter(Boolean);
 
+  const category = await p.select({
+    message: '프로젝트 카테고리:',
+    options: [
+      { value: 'web-app',     label: '웹 앱 (Web App)' },
+      { value: 'mobile-app',  label: '모바일 앱 (Mobile App)' },
+      { value: 'cli-tool',    label: 'CLI 도구 (CLI Tool)' },
+      { value: 'api-backend', label: 'API/백엔드 (API/Backend)' },
+      { value: 'ai-ml',       label: 'AI/ML' },
+      { value: 'game',        label: '게임 (Game)' },
+      { value: 'library',     label: '라이브러리 (Library)' },
+      { value: 'other',       label: '기타 (Other)' },
+    ],
+  });
+  if (p.isCancel(category)) { p.cancel('취소됨'); process.exit(0); }
+
   // Build .pmpt content (resolve from optimized snapshots)
   const history: Version[] = snapshots.map((snapshot, i) => ({
     version: snapshot.version,
@@ -120,6 +135,7 @@ export async function cmdPublish(path?: string): Promise<void> {
       `Versions: ${snapshots.length}`,
       `Size: ${(pmptContent.length / 1024).toFixed(1)} KB`,
       `Author: @${auth.username}`,
+      `Category: ${category}`,
       tags.length ? `Tags: ${tags.join(', ')}` : '',
     ].filter(Boolean).join('\n'),
     'Publish Preview'
@@ -144,6 +160,7 @@ export async function cmdPublish(path?: string): Promise<void> {
       pmptContent,
       description: description as string,
       tags,
+      category: category as string,
     });
 
     s.stop('게시 완료!');
