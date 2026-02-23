@@ -1,10 +1,49 @@
+<div align="center">
+
 # pmpt
 
-**Record and share your AI-driven product development journey.**
+**Answer 5 questions. Start building with AI.**
 
-[![npm version](https://img.shields.io/npm/v/pmpt-cli.svg)](https://www.npmjs.com/package/pmpt-cli)
+[![npm version](https://img.shields.io/npm/v/pmpt-cli.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/pmpt-cli)
+[![license](https://img.shields.io/github/license/pmptwiki/pmpt-cli?style=flat-square)](https://github.com/pmptwiki/pmpt-cli/blob/main/LICENSE)
+[![node](https://img.shields.io/badge/node-%3E%3D18-brightgreen?style=flat-square)](https://github.com/pmptwiki/pmpt-cli)
 
-**Website**: [pmptwiki.com](https://pmptwiki.com)
+The CLI that turns your idea into an AI-ready prompt in 30 seconds.
+
+No coding required. No complex setup. Just answer 5 questions.
+
+[Quick Start](#quick-start) · [Commands](#commands) · [How It Works](#how-it-works) · [Use Cases](#use-cases)
+
+</div>
+
+---
+
+## Demo
+
+```
+$ pmpt plan
+
+┌  pmpt — Let's plan your product!
+│
+◆  What should we call your project?
+│  my-budget-app
+│
+◆  What would you like to build with AI?
+│  A personal budget tracking app for freelancers
+│
+◆  Any additional context AI should know? (optional)
+│  Simple UI, mobile-friendly, works offline
+│
+◆  Key features to include?
+│  Expense tracking; Income categories; Monthly reports; Export to CSV
+│
+◆  Preferred tech stack? (optional)
+│  React, Node.js
+│
+└  Done! AI prompt copied to clipboard.
+
+→ Open Claude / ChatGPT / Cursor → Ctrl+V → Start building!
+```
 
 ---
 
@@ -14,35 +53,56 @@
 npm install -g pmpt-cli
 ```
 
+> Requires Node.js 18+
+
 ---
 
 ## Quick Start
 
 ```bash
-# 1. Initialize project
+# 1. Install
+npm i -g pmpt-cli
+
+# 2. Initialize your project
 pmpt init
 
-# 2. Answer 5 questions → AI prompt generated
+# 3. Answer 5 questions → AI prompt auto-generated & copied
 pmpt plan
 
-# 3. Copy the prompt to Claude/ChatGPT/Cursor and build!
+# 4. Paste into Claude / ChatGPT / Cursor → Build your product!
 
-# 4. Save your progress
+# 5. Save your progress anytime
 pmpt save
 
-# 5. Publish to pmptwiki
-pmpt login
-pmpt publish
+# 6. Share with the community
+pmpt login && pmpt publish
 ```
 
 ---
 
 ## Why pmpt?
 
-- **5 questions** — Quick product planning with AI-ready prompts
-- **Version history** — Track every step of your AI-assisted development
-- **Share & reproduce** — Publish projects for others to learn from and clone
-- **Project hub** — Browse and clone projects at [pmptwiki.com](https://pmptwiki.com/explore)
+| | Without pmpt | With pmpt |
+|---|---|---|
+| **Planning** | Stare at blank screen, write vague prompts | Answer 5 guided questions, get structured AI prompt |
+| **Tracking** | Lose track of what you built and how | Every version auto-saved with full history |
+| **Sharing** | Share finished code only | Share the entire journey — others can reproduce it |
+
+---
+
+## The 5 Questions
+
+`pmpt plan` asks just 5 questions to generate a complete AI prompt:
+
+| # | Question | Example |
+|---|----------|---------|
+| 1 | **Project name** | `my-budget-app` |
+| 2 | **What to build** | `A budget tracking app for freelancers` |
+| 3 | **Additional context** *(optional)* | `Simple UI, mobile-friendly` |
+| 4 | **Key features** | `Expense tracking; Monthly reports; CSV export` |
+| 5 | **Tech stack** *(optional)* | `React, Node.js` — or let AI decide |
+
+The generated prompt is **automatically copied to your clipboard**. Just paste it into your favorite AI tool.
 
 ---
 
@@ -52,72 +112,93 @@ pmpt publish
 
 | Command | Description |
 |---------|-------------|
-| `pmpt init` | Initialize project |
-| `pmpt plan` | 5 questions → AI prompt (copied to clipboard) |
-| `pmpt save` | Save current state as snapshot |
-| `pmpt watch` | Auto-detect file changes |
+| `pmpt init` | Initialize project and start tracking |
+| `pmpt plan` | 5 questions → AI prompt (auto-copied to clipboard) |
+| `pmpt save` | Save current state as a snapshot |
+| `pmpt watch` | Auto-detect file changes and save versions |
+| `pmpt status` | Check project status and tracked files |
 | `pmpt history` | View version history |
-| `pmpt history --compact` | Hide minor changes |
-| `pmpt squash v2 v5` | Merge versions v2-v5 into v2 |
-| `pmpt export` | Export as `.pmpt` file (single JSON) |
+| `pmpt squash v2 v5` | Merge versions v2–v5 into one |
+| `pmpt export` | Export project as `.pmpt` file |
 | `pmpt import <file>` | Import from `.pmpt` file |
-| `pmpt status` | Check project status |
 
 ### Platform
 
 | Command | Description |
 |---------|-------------|
-| `pmpt login` | Authenticate with GitHub (one-time setup) |
-| `pmpt publish` | Publish project to pmptwiki |
-| `pmpt clone <slug>` | Clone a published project |
-| `pmpt browse` | Browse and discover projects |
+| `pmpt login` | Authenticate via GitHub (one-time) |
+| `pmpt publish` | Publish your project for others to discover |
+| `pmpt clone <slug>` | Clone and reproduce someone's project |
+| `pmpt browse` | Browse and search published projects |
+
+> See the full documentation at [pmptwiki.com/docs](https://pmptwiki.com/docs)
 
 ---
 
-## Workflow
+## How It Works
 
 ```
-[You]
-  │
-  ├─ pmpt plan ─────→ 5 questions → AI prompt (clipboard)
-  │
-  ├─ Build with AI ──→ Create files, iterate
-  │
-  ├─ pmpt save ─────→ Save to .pmpt/.history
-  │
-  ├─ pmpt publish ──→ Share on pmptwiki.com
-  │
-  └─ pmpt clone ────→ Reproduce someone's project
+  You                          pmpt                         AI Tool
+   │                            │                              │
+   ├── pmpt init ──────────────→│                              │
+   │                            │  Creates .pmpt/ project      │
+   │                            │                              │
+   ├── pmpt plan ──────────────→│                              │
+   │   (answer 5 questions)     │  Generates AI prompt         │
+   │                            │  → Copied to clipboard       │
+   │                            │                              │
+   ├── Ctrl+V ─────────────────────────────────────────────────→│
+   │                            │                    Builds your product
+   │                            │                              │
+   ├── pmpt save ──────────────→│                              │
+   │                            │  Snapshots version history   │
+   │                            │                              │
+   ├── pmpt publish ───────────→│                              │
+   │                            │  Shares with community       │
+   │                            │                              │
+   └── Others: pmpt clone ─────→│  Reproduces your journey     │
 ```
 
 ---
 
-## Folder Structure
+## Project Structure
 
 ```
-.pmpt/
-├── config.json           # Config file
-├── docs/                 # Working folder (MD files)
-│   ├── plan.md           # Product plan
-│   └── pmpt.md           # AI prompt
-└── .history/             # Version history
-    ├── v1-2024-02-20/
-    ├── v2-2024-02-21/
-    └── ...
+your-project/
+└── .pmpt/
+    ├── config.json        # Project configuration
+    ├── docs/              # Generated documents
+    │   ├── plan.md        # Product plan (features checklist)
+    │   └── pmpt.md        # AI-ready prompt
+    └── .history/          # Auto-saved version history
+        ├── v1-2024-02-20/
+        ├── v2-2024-02-21/
+        └── ...
 ```
 
 ---
 
 ## .pmpt File Format
 
-Single JSON file containing your entire development journey:
+A single portable file containing your entire development journey:
 
 ```json
 {
   "schemaVersion": "1.0",
-  "meta": { "projectName": "", "description": "", "createdAt": "" },
-  "plan": { "productIdea": "", "coreFeatures": "", "techStack": "" },
-  "docs": { "plan.md": "...", "pmpt.md": "..." },
+  "meta": {
+    "projectName": "my-budget-app",
+    "description": "Budget tracking app for freelancers",
+    "createdAt": "2024-02-20T10:00:00Z"
+  },
+  "plan": {
+    "productIdea": "A budget tracking app...",
+    "coreFeatures": "Expense tracking; Monthly reports",
+    "techStack": "React, Node.js"
+  },
+  "docs": {
+    "plan.md": "...",
+    "pmpt.md": "..."
+  },
   "history": [
     { "version": 1, "timestamp": "...", "files": {} },
     { "version": 2, "timestamp": "...", "files": {} }
@@ -125,26 +206,41 @@ Single JSON file containing your entire development journey:
 }
 ```
 
+Share it. Clone it. Reproduce it.
+
 ---
 
 ## Use Cases
 
-- **Side project builders** — Track your AI-assisted development
-- **Startup founders** — Document MVP creation process
-- **Content creators** — Share your coding journey
-- **Learners** — Browse and clone projects to study how others build with AI
+- **Have an idea but no coding skills?** — Answer 5 questions, paste the prompt into AI, and start building
+- **Startup founders** — Document your MVP creation process from day one
+- **Content creators** — Share your AI-assisted building journey as reproducible content
+- **Learners** — Clone published projects to study how others build with AI
+
+---
+
+## Contributing
+
+Contributions are welcome! Feel free to open an [issue](https://github.com/pmptwiki/pmpt-cli/issues) or submit a [pull request](https://github.com/pmptwiki/pmpt-cli/pulls).
 
 ---
 
 ## Links
 
-- [Website](https://pmptwiki.com)
-- [Explore Projects](https://pmptwiki.com/explore)
 - [GitHub](https://github.com/pmptwiki/pmpt-cli)
 - [npm](https://www.npmjs.com/package/pmpt-cli)
+- [Documentation](https://pmptwiki.com/docs)
 
 ---
 
 ## License
 
-MIT
+[MIT](https://github.com/pmptwiki/pmpt-cli/blob/main/LICENSE)
+
+---
+
+<div align="center">
+
+**If pmpt helps you build something, give it a ⭐**
+
+</div>
