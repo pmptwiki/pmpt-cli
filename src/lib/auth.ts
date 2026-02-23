@@ -6,15 +6,16 @@ const CONFIG_DIR = join(homedir(), '.config', 'pmptwiki');
 const TOKEN_FILE = join(CONFIG_DIR, 'auth.json');
 
 interface AuthConfig {
-  token: string;       // pmptwiki API token (or legacy GitHub PAT)
-  githubToken?: string; // GitHub PAT (separate field)
+  token: string;
   username: string;
 }
 
 export function loadAuth(): AuthConfig | null {
   try {
     if (!existsSync(TOKEN_FILE)) return null;
-    return JSON.parse(readFileSync(TOKEN_FILE, 'utf-8'));
+    const data = JSON.parse(readFileSync(TOKEN_FILE, 'utf-8'));
+    if (!data.token || !data.username) return null;
+    return { token: data.token, username: data.username };
   } catch {
     return null;
   }

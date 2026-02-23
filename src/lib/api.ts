@@ -39,11 +39,40 @@ export interface ProjectIndex {
   updatedAt: string;
 }
 
-export async function registerAuth(githubToken: string): Promise<{ token: string; username: string }> {
-  const res = await fetch(`${API_BASE}/auth/register`, {
+export interface DeviceCodeResponse {
+  deviceCode: string;
+  userCode: string;
+  verificationUri: string;
+  expiresIn: number;
+  interval: number;
+}
+
+export interface DeviceTokenResponse {
+  status: 'pending' | 'slow_down' | 'complete';
+  token?: string;
+  username?: string;
+  interval?: number;
+}
+
+export async function requestDeviceCode(): Promise<DeviceCodeResponse> {
+  const res = await fetch(`${API_BASE}/auth/device`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ githubToken }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Device code request failed' }));
+    throw new Error((err as { error: string }).error);
+  }
+
+  return res.json() as Promise<DeviceCodeResponse>;
+}
+
+export async function pollDeviceToken(deviceCode: string): Promise<DeviceTokenResponse> {
+  const res = await fetch(`${API_BASE}/auth/device/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ deviceCode }),
   });
 
   if (!res.ok) {
@@ -51,7 +80,7 @@ export async function registerAuth(githubToken: string): Promise<{ token: string
     throw new Error((err as { error: string }).error);
   }
 
-  return res.json() as Promise<{ token: string; username: string }>;
+  return res.json() as Promise<DeviceTokenResponse>;
 }
 
 export async function publishProject(token: string, data: PublishRequest): Promise<PublishResponse> {
