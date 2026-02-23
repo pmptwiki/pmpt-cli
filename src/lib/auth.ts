@@ -6,7 +6,8 @@ const CONFIG_DIR = join(homedir(), '.config', 'pmptwiki');
 const TOKEN_FILE = join(CONFIG_DIR, 'auth.json');
 
 interface AuthConfig {
-  token: string;
+  token: string;       // pmptwiki API token (or legacy GitHub PAT)
+  githubToken?: string; // GitHub PAT (separate field)
   username: string;
 }
 

@@ -12,13 +12,17 @@ import { cmdSave } from './commands/save.js';
 import { cmdSquash } from './commands/squash.js';
 import { cmdExport } from './commands/export.js';
 import { cmdImport } from './commands/import.js';
+import { cmdLogin } from './commands/login.js';
+import { cmdPublish } from './commands/publish.js';
+import { cmdClone } from './commands/clone.js';
+import { cmdBrowse } from './commands/browse.js';
 
 const program = new Command();
 
 program
   .name('pmpt')
   .description('pmpt — Record and share your AI-driven product development journey')
-  .version('1.3.0')
+  .version('1.4.0')
   .addHelpText('after', `
 Examples:
   $ pmpt init                    Initialize project
@@ -26,16 +30,13 @@ Examples:
   $ pmpt save                    Save snapshot of docs folder
   $ pmpt watch                   Auto-detect file changes
   $ pmpt history                 View version history
-  $ pmpt history --compact       Hide minor changes
   $ pmpt squash v2 v5            Merge versions v2-v5 into v2
   $ pmpt export                  Export as .pmpt file (single JSON)
   $ pmpt import <file.pmpt>      Import from .pmpt file
-
-Folder structure:
-  .pmpt/
-  ├── config.json               Config file
-  ├── docs/                     Working folder (MD files)
-  └── .history/                 Version history
+  $ pmpt login                   Authenticate with pmptwiki
+  $ pmpt publish                 Publish project to pmptwiki
+  $ pmpt clone <slug>            Clone a project from pmptwiki
+  $ pmpt browse                  Browse published projects
 
 Documentation: https://pmptwiki.com
 `);
@@ -118,5 +119,26 @@ program
     clearAuth();
     console.log('Logged out successfully');
   });
+
+// Platform commands
+program
+  .command('login')
+  .description('Authenticate with pmptwiki platform')
+  .action(cmdLogin);
+
+program
+  .command('publish [path]')
+  .description('Publish project to pmptwiki platform')
+  .action(cmdPublish);
+
+program
+  .command('clone <slug>')
+  .description('Clone a project from pmptwiki platform')
+  .action(cmdClone);
+
+program
+  .command('browse')
+  .description('Browse and search published projects')
+  .action(cmdBrowse);
 
 program.parse();
