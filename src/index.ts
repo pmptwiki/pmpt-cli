@@ -1,8 +1,5 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import { cmdNew } from './commands/new.js';
-import { cmdValidate } from './commands/validate.js';
-import { cmdSubmit } from './commands/submit.js';
 import { cmdInit } from './commands/init.js';
 import { cmdStatus } from './commands/status.js';
 import { cmdHistory } from './commands/hist.js';
@@ -91,25 +88,6 @@ program
   .description('Quick product planning with 5 questions — auto-generate AI prompt')
   .option('--reset', 'Restart plan from scratch')
   .action(cmdPlan);
-
-// Contribution commands
-program
-  .command('new')
-  .description('Create new document interactively')
-  .action(cmdNew);
-
-program
-  .command('validate <file>')
-  .description('Validate document frontmatter and content')
-  .action((file: string) => {
-    const ok = cmdValidate(file);
-    if (!ok) process.exit(1);
-  });
-
-program
-  .command('submit <file>')
-  .description('Submit document via Fork → Branch → PR')
-  .action(cmdSubmit);
 
 program
   .command('logout')

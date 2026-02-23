@@ -23,6 +23,7 @@ const GitInfoSchema = z.object({
 const VersionSchema = z.object({
   version: z.number().min(1),
   timestamp: z.string(),
+  summary: z.string().optional(),
   files: z.record(z.string(), z.string()), // filename -> content
   git: GitInfoSchema,
 });
@@ -135,6 +136,63 @@ const AI_GUIDE = [
 ].join('\n');
 
 /**
+ * Generate a short summary describing what changed between two versions.
+ */
+function generateVersionSummary(
+  version: Version,
+  prevVersion: Version | null
+): string {
+  if (!prevVersion) {
+    const fileCount = Object.keys(version.files).length;
+    const fileNames = Object.keys(version.files).join(', ');
+    return `Initial version with ${fileCount} file(s): ${fileNames}`;
+  }
+
+  const prevFiles = new Set(Object.keys(prevVersion.files));
+  const currFiles = new Set(Object.keys(version.files));
+
+  const added = [...currFiles].filter(f => !prevFiles.has(f));
+  const removed = [...prevFiles].filter(f => !currFiles.has(f));
+  const shared = [...currFiles].filter(f => prevFiles.has(f));
+
+  const modified = shared.filter(f => version.files[f] !== prevVersion.files[f]);
+
+  const parts: string[] = [];
+
+  if (added.length > 0) {
+    parts.push(`Added ${added.join(', ')}`);
+  }
+  if (removed.length > 0) {
+    parts.push(`Removed ${removed.join(', ')}`);
+  }
+  if (modified.length > 0) {
+    // Calculate total line changes for modified files
+    let totalAdded = 0;
+    let totalRemoved = 0;
+    for (const f of modified) {
+      const oldLines = prevVersion.files[f].split('\n');
+      const newLines = version.files[f].split('\n');
+      totalAdded += Math.max(0, newLines.length - oldLines.length);
+      totalRemoved += Math.max(0, oldLines.length - newLines.length);
+    }
+    let detail = `Modified ${modified.join(', ')}`;
+    if (totalAdded > 0 || totalRemoved > 0) {
+      const changes: string[] = [];
+      if (totalAdded > 0) changes.push(`+${totalAdded} lines`);
+      if (totalRemoved > 0) changes.push(`-${totalRemoved} lines`);
+      detail += ` (${changes.join(', ')})`;
+    }
+    parts.push(detail);
+  }
+
+  if (parts.length === 0) {
+    return 'No changes detected';
+  }
+
+  return parts.join('. ');
+}
+
+/**
  * Create .pmpt file content from project data
  */
 export function createPmptFile(
@@ -143,6 +201,12 @@ export function createPmptFile(
   docs: Record<string, string>,
   history: Version[]
 ): string {
+  // Auto-generate summaries for each version
+  const historyWithSummary = history.map((version, i) => ({
+    ...version,
+    summary: version.summary || generateVersionSummary(version, i > 0 ? history[i - 1] : null),
+  }));
+
   const pmptFile: PmptFile = {
     schemaVersion: SCHEMA_VERSION,
     cliMinVersion: '1.3.0',
@@ -150,7 +214,7 @@ export function createPmptFile(
     meta,
     plan,
     docs,
-    history,
+    history: historyWithSummary,
   };
 
   return JSON.stringify(pmptFile, null, 2);
