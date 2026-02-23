@@ -1,8 +1,7 @@
 import * as p from '@clack/prompts';
-import { resolve, join } from 'path';
-import { readFileSync, existsSync } from 'fs';
+import { resolve } from 'path';
 import { isInitialized } from '../lib/config.js';
-import { getAllSnapshots, type SnapshotEntry } from '../lib/history.js';
+import { getAllSnapshots, resolveFileContent, type SnapshotEntry } from '../lib/history.js';
 
 interface HistoryOptions {
   compact?: boolean;
@@ -25,17 +24,16 @@ function calculateDiffSize(oldContent: string, newContent: string): number {
   return changes;
 }
 
-// Get total diff between two snapshots
-function getSnapshotDiff(prev: SnapshotEntry, curr: SnapshotEntry): number {
+// Get total diff between two snapshots (supports optimized snapshots)
+function getSnapshotDiff(snapshots: SnapshotEntry[], prevIndex: number, currIndex: number): number {
+  const prev = snapshots[prevIndex];
+  const curr = snapshots[currIndex];
   let totalChanges = 0;
   const allFiles = new Set([...prev.files, ...curr.files]);
 
   for (const file of allFiles) {
-    const prevPath = join(prev.snapshotDir, file);
-    const currPath = join(curr.snapshotDir, file);
-
-    const prevContent = existsSync(prevPath) ? readFileSync(prevPath, 'utf-8') : '';
-    const currContent = existsSync(currPath) ? readFileSync(currPath, 'utf-8') : '';
+    const prevContent = resolveFileContent(snapshots, prevIndex, file) || '';
+    const currContent = resolveFileContent(snapshots, currIndex, file) || '';
 
     totalChanges += calculateDiffSize(prevContent, currContent);
   }
@@ -69,7 +67,7 @@ export function cmdHistory(path?: string, options?: HistoryOptions): void {
     displaySnapshots = [snapshots[0]]; // Always show first
 
     for (let i = 1; i < snapshots.length; i++) {
-      const diffSize = getSnapshotDiff(snapshots[i - 1], snapshots[i]);
+      const diffSize = getSnapshotDiff(snapshots, i - 1, i);
 
       // Threshold: hide if less than 5 lines changed
       if (diffSize < 5) {

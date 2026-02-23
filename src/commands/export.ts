@@ -2,35 +2,13 @@ import * as p from '@clack/prompts';
 import { resolve, join, basename } from 'path';
 import { existsSync, readFileSync, writeFileSync, statSync } from 'fs';
 import { isInitialized, getConfigDir, getDocsDir, loadConfig } from '../lib/config.js';
-import { getAllSnapshots } from '../lib/history.js';
+import { getAllSnapshots, resolveFullSnapshot } from '../lib/history.js';
 import { getPlanProgress } from '../lib/plan.js';
 import { createPmptFile, SCHEMA_VERSION, type Version, type ProjectMeta, type PlanAnswers } from '../lib/pmptFile.js';
 import glob from 'fast-glob';
 
 interface ExportOptions {
   output?: string;
-}
-
-/**
- * Read all files from a snapshot directory
- */
-function readSnapshotFiles(snapshotDir: string): Record<string, string> {
-  const files: Record<string, string> = {};
-
-  if (!existsSync(snapshotDir)) return files;
-
-  const mdFiles = glob.sync('**/*.md', { cwd: snapshotDir });
-
-  for (const file of mdFiles) {
-    const filePath = join(snapshotDir, file);
-    try {
-      files[file] = readFileSync(filePath, 'utf-8');
-    } catch {
-      // Skip files that can't be read
-    }
-  }
-
-  return files;
 }
 
 /**
@@ -88,17 +66,17 @@ export async function cmdExport(path?: string, options?: ExportOptions): Promise
   const s = p.spinner();
   s.start('Creating .pmpt file...');
 
-  // Build history array with file contents
+  // Build history array with file contents (resolve from optimized snapshots)
   const history: Version[] = [];
 
-  for (const snapshot of snapshots) {
-    const files = readSnapshotFiles(snapshot.snapshotDir);
+  for (let i = 0; i < snapshots.length; i++) {
+    const files = resolveFullSnapshot(snapshots, i);
 
     history.push({
-      version: snapshot.version,
-      timestamp: snapshot.timestamp,
+      version: snapshots[i].version,
+      timestamp: snapshots[i].timestamp,
       files,
-      git: snapshot.git,
+      git: snapshots[i].git,
     });
   }
 

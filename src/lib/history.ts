@@ -9,6 +9,7 @@ export interface SnapshotEntry {
   timestamp: string;
   snapshotDir: string;
   files: string[];
+  changedFiles?: string[];  // only changed files stored in snapshot dir (undefined = all files stored)
   git?: {
     commit: string;
     commitFull: string;
@@ -34,7 +35,7 @@ export interface HistoryEntry {
 
 /**
  * .pmpt/docs 폴더의 MD 파일을 스냅샷으로 저장
- * .history/v{N}-{timestamp}/ 폴더에 모든 파일 복사
+ * 변경된 파일만 복사하여 저장 공간 최적화
  */
 export function createFullSnapshot(projectPath: string): SnapshotEntry {
   const historyDir = getHistoryDir(projectPath);
@@ -52,24 +53,39 @@ export function createFullSnapshot(projectPath: string): SnapshotEntry {
 
   mkdirSync(snapshotDir, { recursive: true });
 
-  // docs 폴더의 MD 파일 복사
+  // docs 폴더의 MD 파일 비교 후 변경분만 복사
   const files: string[] = [];
+  const changedFiles: string[] = [];
 
   if (existsSync(docsDir)) {
     const mdFiles = glob.sync('**/*.md', { cwd: docsDir });
 
     for (const file of mdFiles) {
       const srcPath = join(docsDir, file);
-      const destPath = join(snapshotDir, file);
+      const newContent = readFileSync(srcPath, 'utf-8');
+      files.push(file);
 
-      // 하위 디렉토리가 있으면 생성
-      const destDir = join(snapshotDir, file.split('/').slice(0, -1).join('/'));
-      if (destDir !== snapshotDir) {
-        mkdirSync(destDir, { recursive: true });
+      // 이전 버전과 비교
+      let hasChanged = true;
+      if (existing.length > 0) {
+        const prevContent = resolveFileContent(existing, existing.length - 1, file);
+        if (prevContent !== null && prevContent === newContent) {
+          hasChanged = false;
+        }
       }
 
-      copyFileSync(srcPath, destPath);
-      files.push(file);
+      if (hasChanged) {
+        const destPath = join(snapshotDir, file);
+
+        // 하위 디렉토리가 있으면 생성
+        const destDir = join(snapshotDir, file.split('/').slice(0, -1).join('/'));
+        if (destDir !== snapshotDir) {
+          mkdirSync(destDir, { recursive: true });
+        }
+
+        copyFileSync(srcPath, destPath);
+        changedFiles.push(file);
+      }
     }
   }
 
@@ -96,6 +112,7 @@ export function createFullSnapshot(projectPath: string): SnapshotEntry {
     version,
     timestamp,
     files,
+    changedFiles,
     git: gitData,
   }, null, 2), 'utf-8');
 
@@ -104,6 +121,7 @@ export function createFullSnapshot(projectPath: string): SnapshotEntry {
     timestamp,
     snapshotDir,
     files,
+    changedFiles,
     git: gitData,
   };
 }
@@ -212,6 +230,7 @@ export function getAllSnapshots(projectPath: string): SnapshotEntry[] {
       timestamp: match[2].replace(/-/g, ':'),
       snapshotDir,
       files: meta.files || [],
+      changedFiles: meta.changedFiles,
       git: meta.git,
     });
   }
@@ -296,4 +315,36 @@ export function getTrackedFiles(projectPath: string): string[] {
   if (!existsSync(docsDir)) return [];
 
   return glob.sync('**/*.md', { cwd: docsDir });
+}
+
+/**
+ * Resolve file content by walking backwards through snapshots.
+ * Handles optimized snapshots where unchanged files are not stored.
+ */
+export function resolveFileContent(snapshots: SnapshotEntry[], fromIndex: number, fileName: string): string | null {
+  for (let i = fromIndex; i >= 0; i--) {
+    const filePath = join(snapshots[i].snapshotDir, fileName);
+    if (existsSync(filePath)) {
+      return readFileSync(filePath, 'utf-8');
+    }
+  }
+  return null;
+}
+
+/**
+ * Resolve all file contents for a specific snapshot version.
+ * Reconstructs the full file set by walking backwards through history.
+ */
+export function resolveFullSnapshot(snapshots: SnapshotEntry[], targetIndex: number): Record<string, string> {
+  const target = snapshots[targetIndex];
+  const files: Record<string, string> = {};
+
+  for (const fileName of target.files) {
+    const content = resolveFileContent(snapshots, targetIndex, fileName);
+    if (content !== null) {
+      files[fileName] = content;
+    }
+  }
+
+  return files;
 }

@@ -39,12 +39,20 @@ export async function cmdSave(fileOrPath?: string): Promise<void> {
       msg += ` · ${entry.git.commit}`;
       if (entry.git.dirty) msg += ' (uncommitted)';
     }
+
+    const changedCount = entry.changedFiles?.length ?? entry.files.length;
+    const unchangedCount = entry.files.length - changedCount;
+    if (unchangedCount > 0) {
+      msg += ` (${changedCount} changed, ${unchangedCount} skipped)`;
+    }
+
     p.log.success(msg);
 
     p.log.message('');
     p.log.info('Files included:');
     for (const file of entry.files) {
-      p.log.message(`  - ${file}`);
+      const isChanged = entry.changedFiles ? entry.changedFiles.includes(file) : true;
+      p.log.message(`  - ${file}${isChanged ? '' : ' (unchanged)'}`);
     }
   } catch (error) {
     s.stop('Save failed');

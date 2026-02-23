@@ -2,25 +2,13 @@ import * as p from '@clack/prompts';
 import { resolve, basename } from 'path';
 import { readFileSync, existsSync } from 'fs';
 import { isInitialized, loadConfig, saveConfig, getDocsDir } from '../lib/config.js';
-import { getAllSnapshots } from '../lib/history.js';
+import { getAllSnapshots, resolveFullSnapshot } from '../lib/history.js';
 import { getPlanProgress } from '../lib/plan.js';
 import { createPmptFile, SCHEMA_VERSION, type Version, type ProjectMeta, type PlanAnswers } from '../lib/pmptFile.js';
 import { loadAuth } from '../lib/auth.js';
 import { publishProject } from '../lib/api.js';
 import glob from 'fast-glob';
 import { join } from 'path';
-
-function readSnapshotFiles(snapshotDir: string): Record<string, string> {
-  const files: Record<string, string> = {};
-  if (!existsSync(snapshotDir)) return files;
-  const mdFiles = glob.sync('**/*.md', { cwd: snapshotDir });
-  for (const file of mdFiles) {
-    try {
-      files[file] = readFileSync(join(snapshotDir, file), 'utf-8');
-    } catch { /* skip */ }
-  }
-  return files;
-}
 
 function readDocsFolder(docsDir: string): Record<string, string> {
   const files: Record<string, string> = {};
@@ -93,11 +81,11 @@ export async function cmdPublish(path?: string): Promise<void> {
     .map((t) => t.trim().toLowerCase())
     .filter(Boolean);
 
-  // Build .pmpt content (reuse export logic)
-  const history: Version[] = snapshots.map((snapshot) => ({
+  // Build .pmpt content (resolve from optimized snapshots)
+  const history: Version[] = snapshots.map((snapshot, i) => ({
     version: snapshot.version,
     timestamp: snapshot.timestamp,
-    files: readSnapshotFiles(snapshot.snapshotDir),
+    files: resolveFullSnapshot(snapshots, i),
     git: snapshot.git,
   }));
 
