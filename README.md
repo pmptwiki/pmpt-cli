@@ -2,8 +2,6 @@
 
 **Record and share your AI-driven product development journey.**
 
-AI와 대화하며 제품을 만드는 여정을 기록하고 공유하세요.
-
 [![npm version](https://img.shields.io/npm/v/pmpt-cli.svg)](https://www.npmjs.com/package/pmpt-cli)
 
 **Website**: [pmptwiki.com](https://pmptwiki.com)
@@ -44,7 +42,7 @@ pmpt publish
 - **5 questions** — Quick product planning with AI-ready prompts
 - **Version history** — Track every step of your AI-assisted development
 - **Share & reproduce** — Publish projects for others to learn from and clone
-- **Project hub** — Browse and clone projects at [pmptwiki.com](https://pmptwiki.com/en/explore)
+- **Project hub** — Browse and clone projects at [pmptwiki.com](https://pmptwiki.com/explore)
 
 ---
 
@@ -141,7 +139,7 @@ Single JSON file containing your entire development journey:
 ## Links
 
 - [Website](https://pmptwiki.com)
-- [Explore Projects](https://pmptwiki.com/en/explore)
+- [Explore Projects](https://pmptwiki.com/explore)
 - [GitHub](https://github.com/pmptwiki/pmpt-cli)
 - [npm](https://www.npmjs.com/package/pmpt-cli)
 
