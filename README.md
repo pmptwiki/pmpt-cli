@@ -12,7 +12,7 @@ The CLI that turns your idea into an AI-ready prompt in 30 seconds.
 
 No coding required. No complex setup. Just answer 5 questions.
 
-[Quick Start](#quick-start) · [Commands](#commands) · [How It Works](#how-it-works) · [Use Cases](#use-cases)
+[Quick Start](#quick-start) · [Commands](#commands) · [How It Works](#how-it-works) · [Explore Projects](#explore-projects)
 
 </div>
 
@@ -76,6 +76,9 @@ pmpt save
 
 # 6. Share with the community
 pmpt login && pmpt publish
+
+# Bonus: Explore what others are building
+pmpt browse
 ```
 
 ---
@@ -219,6 +222,24 @@ Share it. Clone it. Reproduce it.
 
 ---
 
+## Explore Projects
+
+Don't know what to build? Browse what others have created with AI.
+
+```bash
+# Discover projects from the community
+pmpt browse
+
+# Found something interesting? Clone it and make it yours
+pmpt clone budget-tracker-app
+```
+
+**[Explore Projects on pmptwiki.com →](https://pmptwiki.com/explore)**
+
+See how others planned their products, what prompts they used, and how their projects evolved step by step. Clone any project and use it as a starting point for your own.
+
+---
+
 ## Contributing
 
 Contributions are welcome! Feel free to open an [issue](https://github.com/pmptwiki/pmpt-cli/issues) or submit a [pull request](https://github.com/pmptwiki/pmpt-cli/pulls).
@@ -242,5 +263,7 @@ Contributions are welcome! Feel free to open an [issue](https://github.com/pmptw
 <div align="center">
 
 **If pmpt helps you build something, give it a ⭐**
+
+[Explore what others are building →](https://pmptwiki.com/explore)
 
 </div>
