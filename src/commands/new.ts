@@ -5,7 +5,7 @@ import { generateContent, generateFilePath } from '../lib/template.js';
 import type { DocFrontmatter, Lang, Level, Persona, Purpose } from '../types.js';
 
 export async function cmdNew(): Promise<void> {
-  p.intro('PromptWiki — 새 문서 만들기');
+  p.intro('pmptwiki — 새 문서 만들기');
 
   const answers = await p.group(
     {
@@ -89,6 +89,6 @@ export async function cmdNew(): Promise<void> {
 
 다음 단계:
   1. 파일을 열어 본문을 작성하세요
-  2. promptwiki validate ${filePath}
-  3. promptwiki submit ${filePath}`);
+  2. pmpt validate ${filePath}
+  3. pmpt submit ${filePath}`);
 }

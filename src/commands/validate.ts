@@ -2,7 +2,7 @@ import * as p from '@clack/prompts';
 import { validate } from '../lib/schema.js';
 
 export function cmdValidate(filePath: string): boolean {
-  p.intro(`PromptWiki — 검증: ${filePath}`);
+  p.intro(`pmptwiki — 검증: ${filePath}`);
 
   const result = validate(filePath);
 

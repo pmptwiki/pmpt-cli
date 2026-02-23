@@ -1,7 +1,7 @@
 import { Octokit } from '@octokit/rest';
 import { readFileSync } from 'fs';
 
-const CONTENT_OWNER = 'promptwiki';
+const CONTENT_OWNER = 'pmptwiki';
 const CONTENT_REPO = 'content';
 
 export function createClient(token: string): Octokit {

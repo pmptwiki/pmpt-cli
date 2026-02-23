@@ -1,7 +1,7 @@
 import * as p from '@clack/prompts';
 import { validate } from '../lib/schema.js';
 export function cmdValidate(filePath) {
-    p.intro(`PromptWiki — 검증: ${filePath}`);
+    p.intro(`pmptwiki — 검증: ${filePath}`);
     const result = validate(filePath);
     if (result.errors.length === 0 && result.warnings.length === 0) {
         p.outro('모든 검증 통과');

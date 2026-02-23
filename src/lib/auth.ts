@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
 
-const CONFIG_DIR = join(homedir(), '.config', 'promptwiki');
+const CONFIG_DIR = join(homedir(), '.config', 'pmptwiki');
 const TOKEN_FILE = join(CONFIG_DIR, 'auth.json');
 
 interface AuthConfig {

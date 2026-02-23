@@ -14,7 +14,7 @@ import { validate } from '../lib/schema.js';
 import { today } from '../lib/template.js';
 
 export async function cmdSubmit(filePath: string): Promise<void> {
-  p.intro(`PromptWiki — 제출: ${filePath}`);
+  p.intro(`pmptwiki — 제출: ${filePath}`);
 
   // 1. 검증
   const s1 = p.spinner();
@@ -23,7 +23,7 @@ export async function cmdSubmit(filePath: string): Promise<void> {
   if (!result.valid) {
     s1.stop('검증 실패');
     for (const err of result.errors) p.log.error(err);
-    p.outro('오류를 수정한 후 다시 시도하세요: promptwiki validate ' + filePath);
+    p.outro('오류를 수정한 후 다시 시도하세요: pmpt validate ' + filePath);
     process.exit(1);
   }
   s1.stop(`검증 통과${result.warnings.length ? ` (경고 ${result.warnings.length}개)` : ''}`);
@@ -113,7 +113,7 @@ export async function cmdSubmit(filePath: string): Promise<void> {
     `- [ ] 제목과 내용이 일치하는가?`,
     ``,
     `---`,
-    `_promptwiki-cli로 제출됨_`,
+    `_pmpt-cli로 제출됨_`,
   ]
     .filter((l) => l !== null)
     .join('\n');

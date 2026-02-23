@@ -1,6 +1,6 @@
 {
   "name": "pmpt-cli",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Record and share your AI-driven product development journey",
   "type": "module",
   "bin": {
@@ -21,7 +21,7 @@
   "homepage": "https://pmptwiki.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/promptwiki/cli.git"
+    "url": "https://github.com/pmptwiki/pmpt-cli.git"
   },
   "license": "MIT",
   "engines": {

@@ -128,7 +128,7 @@ Single JSON file containing your entire development journey:
 ## Links
 
 - [Website](https://pmptwiki.com)
-- [GitHub](https://github.com/promptwiki/cli)
+- [GitHub](https://github.com/pmptwiki/pmpt-cli)
 - [npm](https://www.npmjs.com/package/pmpt-cli)
 
 ---

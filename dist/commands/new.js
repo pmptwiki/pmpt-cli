@@ -3,7 +3,7 @@ import { writeFileSync, mkdirSync } from 'fs';
 import { dirname } from 'path';
 import { generateContent, generateFilePath } from '../lib/template.js';
 export async function cmdNew() {
-    p.intro('PromptWiki — 새 문서 만들기');
+    p.intro('pmptwiki — 새 문서 만들기');
     const answers = await p.group({
         lang: () => p.select({
             message: '언어를 선택하세요',
@@ -73,6 +73,6 @@ export async function cmdNew() {
 
 다음 단계:
   1. 파일을 열어 본문을 작성하세요
-  2. promptwiki validate ${filePath}
-  3. promptwiki submit ${filePath}`);
+  2. pmpt validate ${filePath}
+  3. pmpt submit ${filePath}`);
 }
