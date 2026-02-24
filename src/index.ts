@@ -11,6 +11,8 @@ import { cmdExport } from './commands/export.js';
 import { cmdImport } from './commands/import.js';
 import { cmdLogin } from './commands/login.js';
 import { cmdPublish } from './commands/publish.js';
+import { cmdEdit } from './commands/edit.js';
+import { cmdUnpublish } from './commands/unpublish.js';
 import { cmdClone } from './commands/clone.js';
 import { cmdBrowse } from './commands/browse.js';
 
@@ -108,6 +110,16 @@ program
   .command('publish [path]')
   .description('Publish project to pmptwiki platform')
   .action(cmdPublish);
+
+program
+  .command('edit')
+  .description('Edit published project metadata (description, tags, category)')
+  .action(cmdEdit);
+
+program
+  .command('unpublish')
+  .description('Remove a published project from pmptwiki')
+  .action(cmdUnpublish);
 
 program
   .command('clone <slug>')

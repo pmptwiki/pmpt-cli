@@ -6,7 +6,7 @@ import { getAllSnapshots, resolveFullSnapshot } from '../lib/history.js';
 import { getPlanProgress } from '../lib/plan.js';
 import { createPmptFile, SCHEMA_VERSION, type Version, type ProjectMeta, type PlanAnswers } from '../lib/pmptFile.js';
 import { loadAuth } from '../lib/auth.js';
-import { publishProject } from '../lib/api.js';
+import { publishProject, fetchProjects, type ProjectEntry } from '../lib/api.js';
 import glob from 'fast-glob';
 import { join } from 'path';
 
@@ -50,10 +50,24 @@ export async function cmdPublish(path?: string): Promise<void> {
 
   const projectName = planProgress?.answers?.projectName || basename(projectPath);
 
+  // Try to load existing published data for prefill
+  let existing: ProjectEntry | undefined;
+  const savedSlug = config?.lastPublishedSlug;
+  try {
+    const index = await fetchProjects();
+    if (savedSlug) {
+      existing = index.projects.find((p) => p.slug === savedSlug && p.author === auth.username);
+    }
+  } catch { /* ignore — first publish or offline */ }
+
+  const defaultSlug = savedSlug
+    || projectName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
+
   // Collect publish info
   const slug = await p.text({
     message: 'Project slug (used in URL):',
-    placeholder: projectName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-'),
+    placeholder: defaultSlug,
+    defaultValue: savedSlug || '',
     validate: (v) => {
       if (!/^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/.test(v)) {
         return '3-50 chars, lowercase letters, numbers, and hyphens only.';
@@ -64,15 +78,15 @@ export async function cmdPublish(path?: string): Promise<void> {
 
   const description = await p.text({
     message: 'Project description (brief):',
-    placeholder: planProgress?.answers?.productIdea?.slice(0, 100) || '',
-    defaultValue: planProgress?.answers?.productIdea?.slice(0, 200) || '',
+    placeholder: existing?.description || planProgress?.answers?.productIdea?.slice(0, 100) || '',
+    defaultValue: existing?.description || planProgress?.answers?.productIdea?.slice(0, 200) || '',
   });
   if (p.isCancel(description)) { p.cancel('Cancelled'); process.exit(0); }
 
   const tagsInput = await p.text({
     message: 'Tags (comma-separated):',
     placeholder: 'react, saas, mvp',
-    defaultValue: '',
+    defaultValue: existing?.tags?.join(', ') || '',
   });
   if (p.isCancel(tagsInput)) { p.cancel('Cancelled'); process.exit(0); }
 
@@ -83,6 +97,7 @@ export async function cmdPublish(path?: string): Promise<void> {
 
   const category = await p.select({
     message: 'Project category:',
+    initialValue: existing?.category || 'other',
     options: [
       { value: 'web-app',     label: 'Web App' },
       { value: 'mobile-app',  label: 'Mobile App' },
@@ -168,6 +183,7 @@ export async function cmdPublish(path?: string): Promise<void> {
     // Update config
     if (config) {
       config.lastPublished = new Date().toISOString();
+      config.lastPublishedSlug = slug as string;
       saveConfig(projectPath, config);
     }
 

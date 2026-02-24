@@ -31,6 +31,7 @@ export interface ProjectEntry {
   createdAt: string;
   publishedAt: string;
   downloadUrl: string;
+  category?: string;
 }
 
 export interface ProjectIndex {
@@ -109,6 +110,42 @@ export async function fetchProjects(): Promise<ProjectIndex> {
   }
 
   return res.json() as Promise<ProjectIndex>;
+}
+
+export interface EditRequest {
+  description?: string;
+  tags?: string[];
+  category?: string;
+}
+
+export async function editProject(token: string, slug: string, data: EditRequest): Promise<void> {
+  const res = await fetch(`${API_BASE}/publish/${slug}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Edit failed' }));
+    throw new Error((err as { error: string }).error);
+  }
+}
+
+export async function unpublishProject(token: string, slug: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/publish/${slug}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Unpublish failed' }));
+    throw new Error((err as { error: string }).error);
+  }
 }
 
 export async function fetchPmptFile(slug: string): Promise<string> {

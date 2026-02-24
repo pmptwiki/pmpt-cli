@@ -7,6 +7,7 @@ export interface ProjectConfig {
   ignorePatterns: string[];
   createdAt: string;
   lastPublished?: string;
+  lastPublishedSlug?: string;
   // Git integration settings
   repo?: string;
   trackGit?: boolean;
