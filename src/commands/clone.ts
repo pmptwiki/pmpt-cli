@@ -3,7 +3,7 @@ import { join, dirname, resolve, relative, sep } from 'path';
 import { existsSync, mkdirSync, writeFileSync, readdirSync } from 'fs';
 import { isInitialized, getConfigDir, getHistoryDir, getDocsDir, initializeProject } from '../lib/config.js';
 import { validatePmptFile, isSafeFilename, type PmptFile } from '../lib/pmptFile.js';
-import { fetchPmptFile } from '../lib/api.js';
+import { fetchPmptFile, trackClone } from '../lib/api.js';
 
 /**
  * Restore history from .pmpt data (shared with import command)
@@ -154,6 +154,9 @@ export async function cmdClone(slug: string): Promise<void> {
   }
 
   importSpinner.stop('Restore complete!');
+
+  // Track clone event (fire-and-forget)
+  trackClone(slug);
 
   p.note(
     [

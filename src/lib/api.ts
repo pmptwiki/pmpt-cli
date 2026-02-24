@@ -157,3 +157,15 @@ export async function fetchPmptFile(slug: string): Promise<string> {
 
   return res.text();
 }
+
+/**
+ * Fire-and-forget clone tracking ping.
+ * Never throws — failures are silently ignored.
+ */
+export function trackClone(slug: string): void {
+  fetch(`${API_BASE}/metrics/clone`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ slug }),
+  }).catch(() => {});
+}

@@ -16,6 +16,7 @@ import { cmdUnpublish } from './commands/unpublish.js';
 import { cmdClone } from './commands/clone.js';
 import { cmdBrowse } from './commands/browse.js';
 import { cmdRecover } from './commands/recover.js';
+import { cmdDiff } from './commands/diff.js';
 
 const program = new Command();
 
@@ -30,6 +31,8 @@ Examples:
   $ pmpt save                    Save snapshot of docs folder
   $ pmpt watch                   Auto-detect file changes
   $ pmpt history                 View version history
+  $ pmpt diff v1 v2              Compare two versions
+  $ pmpt diff v3                 Compare v3 to working copy
   $ pmpt squash v2 v5            Merge versions v2-v5 into v2
   $ pmpt export                  Export as .pmpt file (single JSON)
   $ pmpt import <file.pmpt>      Import from .pmpt file
@@ -69,6 +72,12 @@ program
   .description('View saved version history')
   .option('-c, --compact', 'Show compact history (hide small changes)')
   .action(cmdHistory);
+
+program
+  .command('diff <v1> [v2] [path]')
+  .description('Compare two versions (or version vs working copy)')
+  .option('-f, --file <name>', 'Compare specific file only')
+  .action(cmdDiff);
 
 program
   .command('squash <from> <to> [path]')
@@ -111,6 +120,7 @@ program
 program
   .command('publish [path]')
   .description('Publish project to pmptwiki platform')
+  .option('--force', 'Publish even if quality score is below minimum')
   .action(cmdPublish);
 
 program

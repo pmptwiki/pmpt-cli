@@ -7,8 +7,14 @@ import { getPlanProgress } from '../lib/plan.js';
 import { createPmptFile, SCHEMA_VERSION, type Version, type ProjectMeta, type PlanAnswers } from '../lib/pmptFile.js';
 import { loadAuth } from '../lib/auth.js';
 import { publishProject, fetchProjects, type ProjectEntry } from '../lib/api.js';
+import { computeQuality } from '../lib/quality.js';
+import pc from 'picocolors';
 import glob from 'fast-glob';
 import { join } from 'path';
+
+interface PublishOptions {
+  force?: boolean;
+}
 
 function readDocsFolder(docsDir: string): Record<string, string> {
   const files: Record<string, string> = {};
@@ -22,7 +28,7 @@ function readDocsFolder(docsDir: string): Record<string, string> {
   return files;
 }
 
-export async function cmdPublish(path?: string): Promise<void> {
+export async function cmdPublish(path?: string, options?: PublishOptions): Promise<void> {
   const projectPath = path ? resolve(path) : process.cwd();
 
   if (!isInitialized(projectPath)) {
@@ -58,6 +64,44 @@ export async function cmdPublish(path?: string): Promise<void> {
   if (pmptMdContent.length === 0) {
     p.log.error('pmpt.md is empty. Run `pmpt plan` to generate content.');
     process.exit(1);
+  }
+
+  // Quality gate
+  const docsDir = getDocsDir(projectPath);
+  const trackedFiles = glob.sync('**/*.md', { cwd: docsDir });
+  const hasGit = snapshots.some(s => !!s.git);
+
+  const quality = computeQuality({
+    pmptMd: pmptMdContent,
+    planAnswers: planProgress?.answers ?? null,
+    versionCount: snapshots.length,
+    docFiles: trackedFiles,
+    hasGit,
+  });
+
+  const gradeColor = quality.grade === 'A' ? pc.green
+    : quality.grade === 'B' ? pc.blue
+    : quality.grade === 'C' ? pc.yellow
+    : pc.red;
+
+  const qLines = [`Score: ${gradeColor(`${quality.score}/100`)} (Grade ${gradeColor(quality.grade)})`];
+  for (const item of quality.details) {
+    const icon = item.score === item.maxScore ? pc.green('✓') : pc.red('✗');
+    qLines.push(`${icon}  ${item.label.padEnd(20)} ${item.score}/${item.maxScore}`);
+  }
+  p.note(qLines.join('\n'), 'Quality Score');
+
+  if (!quality.passesMinimum) {
+    const tips = quality.details.filter(d => d.tip).map(d => `  → ${d.tip}`);
+    p.log.warn(`Quality score ${quality.score}/100 is below minimum (40).`);
+    if (tips.length > 0) {
+      p.log.info('How to improve:\n' + tips.join('\n'));
+    }
+    if (!options?.force) {
+      p.log.error('Use `pmpt publish --force` to publish anyway.');
+      process.exit(1);
+    }
+    p.log.warn('Publishing with --force despite low quality score.');
   }
 
   const projectName = planProgress?.answers?.projectName || basename(projectPath);
@@ -131,7 +175,6 @@ export async function cmdPublish(path?: string): Promise<void> {
     git: snapshot.git,
   }));
 
-  const docsDir = getDocsDir(projectPath);
   const docs = readDocsFolder(docsDir);
 
   const meta: ProjectMeta = {
