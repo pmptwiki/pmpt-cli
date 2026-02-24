@@ -48,6 +48,18 @@ export async function cmdPublish(path?: string): Promise<void> {
     return;
   }
 
+  // Validate pmpt.md exists and has content
+  const pmptMdPath = join(getDocsDir(projectPath), 'pmpt.md');
+  if (!existsSync(pmptMdPath)) {
+    p.log.error('pmpt.md not found. Run `pmpt plan` to generate it first.');
+    process.exit(1);
+  }
+  const pmptMdContent = readFileSync(pmptMdPath, 'utf-8').trim();
+  if (pmptMdContent.length === 0) {
+    p.log.error('pmpt.md is empty. Run `pmpt plan` to generate content.');
+    process.exit(1);
+  }
+
   const projectName = planProgress?.answers?.projectName || basename(projectPath);
 
   // Try to load existing published data for prefill

@@ -15,6 +15,7 @@ import { cmdEdit } from './commands/edit.js';
 import { cmdUnpublish } from './commands/unpublish.js';
 import { cmdClone } from './commands/clone.js';
 import { cmdBrowse } from './commands/browse.js';
+import { cmdRecover } from './commands/recover.js';
 
 const program = new Command();
 
@@ -36,6 +37,7 @@ Examples:
   $ pmpt publish                 Publish project to pmptwiki
   $ pmpt clone <slug>            Clone a project from pmptwiki
   $ pmpt browse                  Browse published projects
+  $ pmpt recover                 Recover damaged pmpt.md via AI
 
 Documentation: https://pmptwiki.com
 `);
@@ -130,5 +132,10 @@ program
   .command('browse')
   .description('Browse and search published projects')
   .action(cmdBrowse);
+
+program
+  .command('recover [path]')
+  .description('Generate a recovery prompt to regenerate pmpt.md via AI')
+  .action(cmdRecover);
 
 program.parse();
