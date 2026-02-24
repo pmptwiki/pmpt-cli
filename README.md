@@ -103,13 +103,14 @@ The generated prompt is **automatically copied to your clipboard**. Just paste i
 | `pmpt squash v2 v5` | Merge versions v2–v5 into one |
 | `pmpt export` | Export project as `.pmpt` file |
 | `pmpt import <file>` | Import from `.pmpt` file |
+| `pmpt recover` | Recover damaged pmpt.md via AI-generated prompt |
 
 ### Platform
 
 | Command | Description |
 |---------|-------------|
 | `pmpt login` | Authenticate via GitHub (one-time) |
-| `pmpt publish` | Publish your project for others to discover |
+| `pmpt publish` | Publish your project (requires pmpt.md) |
 | `pmpt edit` | Edit published project metadata (description, tags, category) |
 | `pmpt unpublish` | Remove a published project from pmptwiki |
 | `pmpt clone <slug>` | Clone and reproduce someone's project |
