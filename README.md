@@ -266,4 +266,6 @@ Contributions are welcome! Feel free to open an [issue](https://github.com/pmptw
 
 [Explore what others are building →](https://pmptwiki.com/explore)
 
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?style=flat-square&logo=buy-me-a-coffee)](https://buymeacoffee.com/pmpt_cafe)
+
 </div>
