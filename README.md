@@ -98,19 +98,23 @@ The generated prompt is **automatically copied to your clipboard**. Just paste i
 | `pmpt plan` | 5 questions → AI prompt (auto-copied to clipboard) |
 | `pmpt save` | Save current state as a snapshot |
 | `pmpt watch` | Auto-detect file changes and save versions |
-| `pmpt status` | Check project status and tracked files |
+| `pmpt status` | Check project status, tracked files, and quality score |
 | `pmpt history` | View version history |
+| `pmpt diff v1 v2` | Compare two versions (unified diff) |
+| `pmpt diff v3` | Compare version vs working copy |
 | `pmpt squash v2 v5` | Merge versions v2–v5 into one |
 | `pmpt export` | Export project as `.pmpt` file |
 | `pmpt import <file>` | Import from `.pmpt` file |
 | `pmpt recover` | Recover damaged pmpt.md via AI-generated prompt |
+| `pmpt -v` | Show current CLI version |
 
 ### Platform
 
 | Command | Description |
 |---------|-------------|
 | `pmpt login` | Authenticate via GitHub (one-time) |
-| `pmpt publish` | Publish your project (requires pmpt.md) |
+| `pmpt publish` | Publish your project (requires pmpt.md, quality ≥ 40) |
+| `pmpt publish --force` | Publish even if quality score is below minimum |
 | `pmpt edit` | Edit published project metadata (description, tags, category) |
 | `pmpt unpublish` | Remove a published project from pmptwiki |
 | `pmpt clone <slug>` | Clone and reproduce someone's project |
