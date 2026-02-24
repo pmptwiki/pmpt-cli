@@ -1,8 +1,8 @@
 import * as p from '@clack/prompts';
 import { resolve } from 'path';
 import { readFileSync } from 'fs';
-import { execSync } from 'child_process';
 import { isInitialized } from '../lib/config.js';
+import { copyToClipboard } from '../lib/clipboard.js';
 import { cmdWatch } from './watch.js';
 import {
   PLAN_QUESTIONS,
@@ -14,28 +14,6 @@ import {
 
 interface PlanOptions {
   reset?: boolean;
-}
-
-// Cross-platform clipboard copy
-function copyToClipboard(text: string): boolean {
-  try {
-    const platform = process.platform;
-    if (platform === 'darwin') {
-      execSync('pbcopy', { input: text });
-    } else if (platform === 'win32') {
-      execSync('clip', { input: text });
-    } else {
-      // Linux - try xclip or xsel
-      try {
-        execSync('xclip -selection clipboard', { input: text });
-      } catch {
-        execSync('xsel --clipboard --input', { input: text });
-      }
-    }
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 export async function cmdPlan(path?: string, options?: PlanOptions): Promise<void> {
