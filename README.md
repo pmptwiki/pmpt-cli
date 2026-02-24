@@ -5,7 +5,7 @@
 **Answer 5 questions. Start building with AI.**
 
 [![npm version](https://img.shields.io/npm/v/pmpt-cli.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/pmpt-cli)
-[![license](https://img.shields.io/github/license/pmptwiki/pmpt-cli?style=flat-square)](https://github.com/pmptwiki/pmpt-cli/blob/main/LICENSE)
+[![license](https://img.shields.io/github/license/pmptwiki/pmpt-cli?style=flat-square&v=2)](https://github.com/pmptwiki/pmpt-cli/blob/main/LICENSE)
 [![node](https://img.shields.io/badge/node-%3E%3D18-brightgreen?style=flat-square)](https://github.com/pmptwiki/pmpt-cli)
 
 The CLI that turns your idea into an AI-ready prompt in 30 seconds.
