@@ -42,7 +42,7 @@ $ pmpt plan
 │
 └  Done! AI prompt copied to clipboard.
 
-→ Open Claude / ChatGPT / Cursor → Ctrl+V → Start building!
+→ Open Claude Code / Codex / Cursor → Ctrl+V → Start building!
 ```
 
 ---
@@ -69,7 +69,7 @@ pmpt init
 # 3. Answer 5 questions → AI prompt auto-generated & copied
 pmpt plan
 
-# 4. Paste into Claude / ChatGPT / Cursor → Build your product!
+# 4. Paste into Claude Code / Codex / Cursor → Build your product!
 
 # 5. Save your progress anytime
 pmpt save

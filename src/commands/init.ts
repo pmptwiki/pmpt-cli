@@ -223,7 +223,7 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
           `   Location: ${planPath}`,
           '',
           `2. pmpt.md — AI prompt (THE IMPORTANT ONE!)`,
-          `   Copy this to Claude/ChatGPT/Codex`,
+          `   Copy this to Claude Code / Codex / Cursor`,
           `   Location: ${promptPath}`,
         ];
         p.note(docExplanation.join('\n'), 'Auto-generated from project scan');

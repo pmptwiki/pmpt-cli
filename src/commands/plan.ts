@@ -193,7 +193,7 @@ export async function cmdPlan(path?: string, options?: PlanOptions): Promise<voi
     `   Location: ${planPath}`,
     '',
     `2. pmpt.md — AI prompt (THE IMPORTANT ONE!)`,
-    `   • Copy this to Claude/ChatGPT/Codex`,
+    `   • Copy this to Claude Code / Codex / Cursor`,
     `   • AI will help you build step by step`,
     `   • AI will update this doc as you progress`,
     `   Location: ${promptPath}`,
