@@ -17,13 +17,17 @@ import { cmdClone } from './commands/clone.js';
 import { cmdBrowse } from './commands/browse.js';
 import { cmdRecover } from './commands/recover.js';
 import { cmdDiff } from './commands/diff.js';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const { version } = require('../package.json');
 
 const program = new Command();
 
 program
   .name('pmpt')
   .description('pmpt — Record and share your AI-driven product development journey')
-  .version('1.5.2')
+  .version(version, '-v, --version')
   .addHelpText('after', `
 Examples:
   $ pmpt init                    Initialize project
