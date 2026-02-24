@@ -20,30 +20,9 @@ No coding required. No complex setup. Just answer 5 questions.
 
 ## Demo
 
-```
-$ pmpt plan
+<img src="./demo.gif" alt="pmpt plan demo" width="600" />
 
-┌  pmpt — Let's plan your product!
-│
-◆  What should we call your project?
-│  my-budget-app
-│
-◆  What would you like to build with AI?
-│  A personal budget tracking app for freelancers
-│
-◆  Any additional context AI should know? (optional)
-│  Simple UI, mobile-friendly, works offline
-│
-◆  Key features to include?
-│  Expense tracking; Income categories; Monthly reports; Export to CSV
-│
-◆  Preferred tech stack? (optional)
-│  React, Node.js
-│
-└  Done! AI prompt copied to clipboard.
-
-→ Open Claude Code / Codex / Cursor → Ctrl+V → Start building!
-```
+> Answer 5 questions → AI prompt auto-generated & copied to clipboard → Paste into Claude Code / Codex / Cursor → Start building!
 
 ---
 
