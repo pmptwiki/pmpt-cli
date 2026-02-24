@@ -1,8 +1,8 @@
 import * as p from '@clack/prompts';
-import { resolve, join, dirname } from 'path';
-import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 'fs';
+import { resolve, join, dirname, sep } from 'path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, rmSync } from 'fs';
 import { isInitialized, getConfigDir, getHistoryDir, getDocsDir, initializeProject } from '../lib/config.js';
-import { validatePmptFile, SCHEMA_VERSION, type PmptFile } from '../lib/pmptFile.js';
+import { validatePmptFile, isSafeFilename, SCHEMA_VERSION, type PmptFile } from '../lib/pmptFile.js';
 
 interface ImportOptions {
   force?: boolean;
@@ -21,9 +21,11 @@ function restoreHistory(historyDir: string, history: PmptFile['history']): void 
 
     mkdirSync(snapshotDir, { recursive: true });
 
-    // Write files
+    // Write files (with path traversal protection)
     for (const [filename, content] of Object.entries(version.files)) {
+      if (!isSafeFilename(filename)) continue;
       const filePath = join(snapshotDir, filename);
+      if (!resolve(filePath).startsWith(resolve(snapshotDir) + sep)) continue;
       const fileDir = dirname(filePath);
 
       if (fileDir !== snapshotDir) {
@@ -51,7 +53,9 @@ function restoreDocs(docsDir: string, docs: Record<string, string>): void {
   mkdirSync(docsDir, { recursive: true });
 
   for (const [filename, content] of Object.entries(docs)) {
+    if (!isSafeFilename(filename)) continue;
     const filePath = join(docsDir, filename);
+    if (!resolve(filePath).startsWith(resolve(docsDir) + sep)) continue;
     const fileDir = dirname(filePath);
 
     if (fileDir !== docsDir) {
@@ -144,14 +148,22 @@ export async function cmdImport(pmptFile: string, options?: ImportOptions): Prom
   const importSpinner = p.spinner();
   importSpinner.start('Importing project...');
 
+  const pmptDir = getConfigDir(projectPath);
+  const historyDir = getHistoryDir(projectPath);
+  const docsDir = getDocsDir(projectPath);
+
+  // --force: clean existing history and docs before restoring
+  if (options?.force && isInitialized(projectPath)) {
+    if (existsSync(historyDir)) rmSync(historyDir, { recursive: true, force: true });
+    if (existsSync(docsDir)) rmSync(docsDir, { recursive: true, force: true });
+    const planPath = join(pmptDir, 'plan-progress.json');
+    if (existsSync(planPath)) rmSync(planPath, { force: true });
+  }
+
   // Initialize project if not exists
   if (!isInitialized(projectPath)) {
     initializeProject(projectPath, { trackGit: true });
   }
-
-  const pmptDir = getConfigDir(projectPath);
-  const historyDir = getHistoryDir(projectPath);
-  const docsDir = getDocsDir(projectPath);
 
   // Restore history
   restoreHistory(historyDir, pmptData.history);

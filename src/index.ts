@@ -77,13 +77,13 @@ program
 
 program
   .command('export [path]')
-  .description('Export project history as a shareable zip archive')
+  .description('Export project history as a shareable .pmpt file')
   .option('-o, --output <file>', 'Output file path')
   .action(cmdExport);
 
 program
   .command('import <file>')
-  .description('Import project from exported zip archive')
+  .description('Import project from .pmpt file')
   .option('-f, --force', 'Overwrite existing project')
   .action(cmdImport);
 

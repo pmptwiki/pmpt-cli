@@ -5,10 +5,35 @@
  */
 
 import { z } from 'zod';
+import { join, resolve, relative } from 'path';
 
 // Schema version
 export const SCHEMA_VERSION = '1.0';
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+/**
+ * Validate that a filename is safe (no path traversal).
+ * Rejects absolute paths, ".." components, and backslash paths.
+ */
+export function isSafeFilename(filename: string): boolean {
+  if (!filename || filename.length === 0) return false;
+  // Reject absolute paths and backslashes
+  if (/^[/\\]/.test(filename) || /\\/.test(filename)) return false;
+  // Reject .. path components
+  const parts = filename.split('/');
+  if (parts.some(p => p === '..' || p === '.')) return false;
+  // Double check: resolve and verify it stays within parent
+  const base = '/safe';
+  const resolved = resolve(base, filename);
+  const rel = relative(base, resolved);
+  if (rel.startsWith('..') || resolve(rel) !== resolve(base, rel)) return false;
+  return true;
+}
+
+// Safe filename zod refinement
+const safeFilenameKey = z.string().refine(isSafeFilename, {
+  message: 'Unsafe filename detected (path traversal)',
+});
 
 // Git info schema
 const GitInfoSchema = z.object({
@@ -24,7 +49,7 @@ const VersionSchema = z.object({
   version: z.number().min(1),
   timestamp: z.string(),
   summary: z.string().optional(),
-  files: z.record(z.string(), z.string()), // filename -> content
+  files: z.record(safeFilenameKey, z.string()), // filename -> content
   git: GitInfoSchema,
 });
 
@@ -53,7 +78,7 @@ export const PmptFileSchema = z.object({
   guide: z.string().optional(),
   meta: MetaSchema,
   plan: PlanSchema,
-  docs: z.record(z.string(), z.string()).optional(), // current docs
+  docs: z.record(safeFilenameKey, z.string()).optional(), // current docs
   history: z.array(VersionSchema),
 });
 

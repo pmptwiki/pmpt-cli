@@ -1,6 +1,6 @@
 import * as p from '@clack/prompts';
 import { resolve, basename } from 'path';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { isInitialized, getDocsDir } from '../lib/config.js';
 import { getAllSnapshots, resolveFileContent } from '../lib/history.js';
@@ -208,18 +208,17 @@ Write the content directly to \`.pmpt/docs/pmpt.md\`. After writing, run \`pmpt 
 }
 
 function readdirTopLevel(projectPath: string): string[] {
-  const { readdirSync, statSync } = require('fs');
   const ignore = new Set([
     'node_modules', '.git', '.pmpt', 'dist', 'build', '.next',
     '.nuxt', '.astro', '.vercel', '.cache', 'coverage', '.turbo',
   ]);
 
   try {
-    const entries: string[] = readdirSync(projectPath);
+    const entries = readdirSync(projectPath, { encoding: 'utf-8' });
     return entries
-      .filter((e: string) => !ignore.has(e) && !e.startsWith('.'))
+      .filter(e => !ignore.has(e) && !e.startsWith('.'))
       .slice(0, 30)
-      .map((e: string) => {
+      .map(e => {
         try {
           const stat = statSync(join(projectPath, e));
           return stat.isDirectory() ? `${e}/` : e;

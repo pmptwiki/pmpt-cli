@@ -79,7 +79,7 @@ export async function cmdBrowse(): Promise<void> {
   }
 
   if (action === 'url') {
-    const url = `https://pmptwiki.com/ko/p/${project.slug}`;
+    const url = `https://pmptwiki.com/p/${project.slug}`;
     p.log.info(`URL: ${url}`);
     p.log.message(`Download: ${project.downloadUrl}`);
     p.log.message(`\npmpt clone ${project.slug}  — clone via terminal`);

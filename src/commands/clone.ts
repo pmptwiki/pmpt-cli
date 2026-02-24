@@ -1,8 +1,8 @@
 import * as p from '@clack/prompts';
-import { join, dirname } from 'path';
+import { join, dirname, resolve, relative, sep } from 'path';
 import { existsSync, mkdirSync, writeFileSync, readdirSync } from 'fs';
 import { isInitialized, getConfigDir, getHistoryDir, getDocsDir, initializeProject } from '../lib/config.js';
-import { validatePmptFile, type PmptFile } from '../lib/pmptFile.js';
+import { validatePmptFile, isSafeFilename, type PmptFile } from '../lib/pmptFile.js';
 import { fetchPmptFile } from '../lib/api.js';
 
 /**
@@ -19,7 +19,10 @@ export function restoreHistory(historyDir: string, history: PmptFile['history'])
     mkdirSync(snapshotDir, { recursive: true });
 
     for (const [filename, content] of Object.entries(version.files)) {
+      if (!isSafeFilename(filename)) continue; // skip unsafe filenames
       const filePath = join(snapshotDir, filename);
+      // Double-check resolved path stays within snapshot dir
+      if (!resolve(filePath).startsWith(resolve(snapshotDir) + sep)) continue;
       const fileDir = dirname(filePath);
       if (fileDir !== snapshotDir) {
         mkdirSync(fileDir, { recursive: true });
@@ -47,7 +50,9 @@ export function restoreDocs(docsDir: string, docs: Record<string, string>): void
   mkdirSync(docsDir, { recursive: true });
 
   for (const [filename, content] of Object.entries(docs)) {
+    if (!isSafeFilename(filename)) continue; // skip unsafe filenames
     const filePath = join(docsDir, filename);
+    if (!resolve(filePath).startsWith(resolve(docsDir) + sep)) continue;
     const fileDir = dirname(filePath);
     if (fileDir !== docsDir) {
       mkdirSync(fileDir, { recursive: true });
