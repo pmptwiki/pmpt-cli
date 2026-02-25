@@ -83,16 +83,23 @@ export function cmdDiff(
   pathOrOptions?: string | DiffOptions,
   maybeOptions?: DiffOptions,
 ): void {
-  // Commander passes args differently depending on how many positionals are given.
-  // pmpt diff v1 --file x       → (v1, options)
-  // pmpt diff v1 v2             → (v1, v2, options)
-  // pmpt diff v1 v2 /path       → (v1, v2, path, options)
+  // Commander passes args in order: pmpt diff v1 [v2] [path] [options]
+  // Smart parsing: if v2 looks like a path (not a version pattern), treat it as path.
   let v2Str: string | undefined;
   let path: string | undefined;
   let options: DiffOptions = {};
 
+  const isVersion = (s: string) => /^v?\d+$/.test(s);
+
   if (typeof v2 === 'object') {
+    // pmpt diff v1 --file x → (v1, options)
     options = v2;
+  } else if (v2 !== undefined && !isVersion(v2)) {
+    // pmpt diff v1 /some/path → v2 is actually a path
+    path = v2;
+    if (typeof pathOrOptions === 'object') {
+      options = pathOrOptions;
+    }
   } else {
     v2Str = v2;
     if (typeof pathOrOptions === 'object') {
