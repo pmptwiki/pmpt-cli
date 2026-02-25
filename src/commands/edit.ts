@@ -79,6 +79,38 @@ export async function cmdEdit(): Promise<void> {
   });
   if (p.isCancel(category)) { p.cancel('Cancelled'); process.exit(0); }
 
+  // Product link (optional)
+  const linkTypeInput = await p.select({
+    message: 'Product link (optional):',
+    initialValue: project.productUrlType || 'none',
+    options: [
+      { value: 'none', label: 'No link' },
+      { value: 'git',  label: 'Git Repository' },
+      { value: 'url',  label: 'Website / URL' },
+    ] as { value: string; label: string }[],
+  });
+  if (p.isCancel(linkTypeInput)) { p.cancel('Cancelled'); process.exit(0); }
+
+  let productUrl = '';
+  let productUrlType = '';
+
+  if (linkTypeInput !== 'none') {
+    productUrlType = linkTypeInput as string;
+    const productUrlInput = await p.text({
+      message: 'Product URL:',
+      placeholder: linkTypeInput === 'git'
+        ? `https://github.com/${auth.username}/${slug}`
+        : 'https://...',
+      defaultValue: project.productUrl || '',
+      validate: (v) => {
+        if (!v.trim()) return 'URL is required when link type is selected.';
+        try { new URL(v); } catch { return 'Invalid URL format.'; }
+      },
+    });
+    if (p.isCancel(productUrlInput)) { p.cancel('Cancelled'); process.exit(0); }
+    productUrl = productUrlInput as string;
+  }
+
   const s2 = p.spinner();
   s2.start('Updating...');
 
@@ -87,6 +119,8 @@ export async function cmdEdit(): Promise<void> {
       description: description as string,
       tags,
       category: category as string,
+      productUrl,
+      productUrlType,
     });
     s2.stop('Updated!');
     p.log.success(`Project "${slug}" has been updated.`);

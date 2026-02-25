@@ -48,6 +48,13 @@ export async function cmdSave(fileOrPath?: string): Promise<void> {
 
     p.log.success(msg);
 
+    // Warn if pmpt.md was not updated since last save
+    if (entry.version > 1 && entry.changedFiles && !entry.changedFiles.includes('pmpt.md')) {
+      p.log.message('');
+      p.log.warn('pmpt.md has not been updated since the last save.');
+      p.log.message('  Tip: Mark completed features and update the Snapshot Log before saving.');
+    }
+
     p.log.message('');
     p.log.info('Files included:');
     for (const file of entry.files) {

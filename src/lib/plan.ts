@@ -109,6 +109,12 @@ I'll confirm progress at each step before moving to the next.
 
 Keep the Progress and Snapshot Log sections in pmpt.md up to date.
 After significant milestones, run \`pmpt save\` to create a snapshot.
+
+### Per-Feature Checklist
+After completing each feature above:
+1. Mark the feature done in \`.pmpt/docs/pmpt.md\` (change \`- [ ]\` to \`- [x]\`)
+2. Add a brief note to the Snapshot Log section
+3. Run \`pmpt save\` in terminal
 `;
 }
 

@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, writeFileSync, readFileSync, readdirSync } from 
 import { isInitialized, getConfigDir, getHistoryDir, getDocsDir, initializeProject } from '../lib/config.js';
 import { validatePmptFile, isSafeFilename, type PmptFile } from '../lib/pmptFile.js';
 import { fetchPmptFile, trackClone } from '../lib/api.js';
+import { copyToClipboard } from '../lib/clipboard.js';
 
 /**
  * Restore history from .pmpt data (shared with import command)
@@ -175,6 +176,19 @@ export async function cmdClone(slug: string): Promise<void> {
     '',
     '---',
     '',
+    `## Documentation Rule`,
+    '',
+    `**Important:** When you make progress, update \`.pmpt/docs/pmpt.md\` (the human-facing project document) at these moments:`,
+    `- When architecture or tech decisions are finalized`,
+    `- When a feature is implemented (mark as done)`,
+    `- When a development phase is completed`,
+    `- When requirements change or new decisions are made`,
+    '',
+    `Keep the Progress and Snapshot Log sections in pmpt.md up to date.`,
+    `After significant milestones, run \`pmpt save\` to create a snapshot.`,
+    '',
+    '---',
+    '',
     originalAiMd,
   ].join('\n');
 
@@ -212,10 +226,40 @@ export async function cmdClone(slug: string): Promise<void> {
     'Clone Summary'
   );
 
-  p.log.info('Next steps:');
-  p.log.message('  pmpt history    — view version history');
-  p.log.message('  pmpt plan       — view AI prompt');
-  p.log.message('  pmpt save       — save a new snapshot');
+  // Copy AI prompt to clipboard
+  const aiContent = readFileSync(aiMdPath, 'utf-8');
+  const copied = copyToClipboard(aiContent);
 
+  if (copied) {
+    p.log.message('');
+    p.log.success('AI prompt copied to clipboard!');
+    p.log.message('');
+
+    const banner = [
+      '',
+      '┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓',
+      '┃                                                        ┃',
+      '┃   📋  NEXT STEP                                        ┃',
+      '┃                                                        ┃',
+      '┃   Open your AI coding tool and press:           ┃',
+      '┃                                                        ┃',
+      '┃              ⌘ + V  (Mac)                              ┃',
+      '┃             Ctrl + V (Windows/Linux)                   ┃',
+      '┃                                                        ┃',
+      '┃   Your cloned project context is ready! 🚀             ┃',
+      '┃                                                        ┃',
+      '┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛',
+      '',
+    ];
+    console.log(banner.join('\n'));
+  } else {
+    p.log.warn('Could not copy to clipboard.');
+    p.log.info(`Read it at: ${aiMdPath}`);
+  }
+
+  p.log.info('Tips:');
+  p.log.message('  pmpt history    — view version history');
+  p.log.message('  pmpt plan       — view or edit AI prompt');
+  p.log.message('  pmpt save       — save a new snapshot');
   p.outro('Project cloned!');
 }
