@@ -98,9 +98,13 @@ export function cmdHistory(path?: string, options?: HistoryOptions): void {
       if (snapshot.git.dirty) header += ' (dirty)';
     }
 
-    const files = snapshot.files.map((f) => `  - ${f}`).join('\n');
+    const lines: string[] = [];
+    if (snapshot.note) {
+      lines.push(`  ${snapshot.note}`, '');
+    }
+    lines.push(...snapshot.files.map((f) => `  - ${f}`));
 
-    p.note(files || '  (no files)', header);
+    p.note(lines.join('\n') || '  (no files)', header);
   }
 
   if (options?.compact && hiddenVersions.length > 0) {

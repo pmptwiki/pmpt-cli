@@ -124,9 +124,9 @@ export async function cmdInternalSeed(options?: InternalSeedOptions): Promise<vo
       writeDocFile(docsDir, fileName, content);
     }
 
-    const entry = createFullSnapshot(projectPath);
-    const note = step.saveNote ? ` — ${step.saveNote}` : '';
-    p.log.success(`v${entry.version} saved${note}`);
+    const entry = createFullSnapshot(projectPath, { note: step.saveNote });
+    const noteStr = entry.note ? ` — ${entry.note}` : '';
+    p.log.success(`v${entry.version} saved${noteStr}`);
   }
 
   if (spec.publish?.enabled) {

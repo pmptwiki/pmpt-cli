@@ -4,12 +4,28 @@ import { getHistoryDir, getDocsDir, loadConfig } from './config.js';
 import { getGitInfo, isGitRepo } from './git.js';
 import glob from 'fast-glob';
 
+/** Generate compact timestamp for snapshot dir names: 20260225T163000 */
+function compactTimestamp(): string {
+  return new Date().toISOString().replace(/[-:\.]/g, '').slice(0, 15);
+}
+
+/** Parse snapshot dir timestamp (compact or legacy) to ISO string */
+function parseTimestamp(raw: string): string {
+  // Compact: 20260225T163000
+  if (/^\d{8}T\d{6}$/.test(raw)) {
+    return `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}T${raw.slice(9, 11)}:${raw.slice(11, 13)}:${raw.slice(13, 15)}`;
+  }
+  // Legacy: 2026-02-25T16-30-00
+  return raw.replace(/T(.+)$/, (_, time: string) => 'T' + time.replace(/-/g, ':'));
+}
+
 export interface SnapshotEntry {
   version: number;
   timestamp: string;
   snapshotDir: string;
   files: string[];
   changedFiles?: string[];  // only changed files stored in snapshot dir (undefined = all files stored)
+  note?: string;
   git?: {
     commit: string;
     commitFull: string;
@@ -37,7 +53,7 @@ export interface HistoryEntry {
  * Save .pmpt/docs MD files as snapshot
  * Copy only changed files to optimize storage
  */
-export function createFullSnapshot(projectPath: string): SnapshotEntry {
+export function createFullSnapshot(projectPath: string, options?: { note?: string }): SnapshotEntry {
   const historyDir = getHistoryDir(projectPath);
   const docsDir = getDocsDir(projectPath);
 
@@ -47,7 +63,7 @@ export function createFullSnapshot(projectPath: string): SnapshotEntry {
   const existing = getAllSnapshots(projectPath);
   const version = existing.length + 1;
 
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const timestamp = compactTimestamp();
   const snapshotName = `v${version}-${timestamp}`;
   const snapshotDir = join(historyDir, snapshotName);
 
@@ -107,12 +123,14 @@ export function createFullSnapshot(projectPath: string): SnapshotEntry {
   }
 
   // Save metadata
+  const note = options?.note;
   const metaPath = join(snapshotDir, '.meta.json');
   writeFileSync(metaPath, JSON.stringify({
     version,
     timestamp,
     files,
     changedFiles,
+    ...(note ? { note } : {}),
     git: gitData,
   }, null, 2), 'utf-8');
 
@@ -122,6 +140,7 @@ export function createFullSnapshot(projectPath: string): SnapshotEntry {
     snapshotDir,
     files,
     changedFiles,
+    note,
     git: gitData,
   };
 }
@@ -147,7 +166,7 @@ export function createSnapshot(projectPath: string, filePath: string): HistoryEn
 
 function createSingleFileSnapshot(projectPath: string, filePath: string, relPath: string): HistoryEntry {
   const historyDir = getHistoryDir(projectPath);
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const timestamp = compactTimestamp();
 
   // Check existing version count for this file
   const existing = getFileHistory(projectPath, relPath);
@@ -227,10 +246,11 @@ export function getAllSnapshots(projectPath: string): SnapshotEntry[] {
 
     entries.push({
       version: parseInt(match[1], 10),
-      timestamp: match[2].replace(/-/g, ':'),
+      timestamp: parseTimestamp(match[2]),
       snapshotDir,
       files: meta.files || [],
       changedFiles: meta.changedFiles,
+      note: meta.note,
       git: meta.git,
     });
   }
@@ -273,7 +293,7 @@ export function getFileHistory(projectPath: string, relPath: string): HistoryEnt
 
     entries.push({
       version: parseInt(match[1], 10),
-      timestamp: match[2].replace(/-/g, ':'),
+      timestamp: parseTimestamp(match[2]),
       filePath: relPath,
       historyPath: filePath,
       git: gitData,
