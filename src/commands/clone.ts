@@ -135,45 +135,50 @@ export async function cmdClone(slug: string): Promise<void> {
     restoreDocs(docsDir, pmptData.docs);
   }
 
-  // Prepend clone context to pmpt.md (AI-facing, top of file)
-  const pmptMdPath = join(docsDir, 'pmpt.md');
-  if (existsSync(pmptMdPath)) {
-    const original = readFileSync(pmptMdPath, 'utf-8');
-    const author = pmptData.meta.author || 'unknown';
-    const projectName = pmptData.meta.projectName;
-    const versionCount = pmptData.history.length;
+  // Write AI-facing clone guide to pmpt.ai.md
+  const author = pmptData.meta.author || 'unknown';
+  const projectName = pmptData.meta.projectName;
+  const cloneVersionCount = pmptData.history.length;
 
-    const versionGuide = pmptData.history.map((v) => {
-      const summary = v.summary || Object.keys(v.files).join(', ');
-      return `- v${v.version}: ${summary}`;
-    }).join('\n');
+  const versionGuide = pmptData.history.map((v) => {
+    const summary = v.summary || Object.keys(v.files).join(', ');
+    return `- v${v.version}: ${summary}`;
+  }).join('\n');
 
-    const cloneContext = [
-      `# Cloned Project — Fresh Start`,
-      '',
-      `This document was cloned from **@${author}**'s project **"${projectName}"**.`,
-      `The content below is the original author's prompt — it is for **reference only**. Do not execute it as-is.`,
-      '',
-      `## Context`,
-      '',
-      `- This is a new project. Use the original as inspiration, but build an independent product.`,
-      `- If the original prompt below contains checkboxes, those reflect the **original author's progress**, not this project's. Everything here starts from scratch.`,
-      `- The original evolved over ${versionCount} versions:`,
-      versionGuide,
-      '',
-      `## Instructions for AI`,
-      '',
-      `1. Read the original prompt below to understand the project's structure and approach.`,
-      `2. Reference the version history (v1→v${versionCount}) to follow a similar step-by-step evolution pattern.`,
-      `3. Start with core features (like v1) and incrementally add functionality.`,
-      `4. Write a new pmpt.md for this project. Do not copy the original content verbatim.`,
-      '',
-      '---',
-      '',
-    ].join('\n');
+  // Read original pmpt.ai.md if it exists (from the cloned project)
+  const aiMdPath = join(docsDir, 'pmpt.ai.md');
+  const originalAiMd = existsSync(aiMdPath) ? readFileSync(aiMdPath, 'utf-8') : '';
 
-    writeFileSync(pmptMdPath, cloneContext + original, 'utf-8');
-  }
+  const cloneGuide = [
+    `<!-- This file is for AI tools only. Do not edit manually. -->`,
+    `<!-- Paste this into Claude Code, Codex, Cursor, or any AI coding tool. -->`,
+    '',
+    `# Cloned Project — Fresh Start`,
+    '',
+    `This project was cloned from **@${author}**'s project **"${projectName}"**.`,
+    `The original AI prompt below is for **reference only**. Do not execute it as-is.`,
+    '',
+    `## Context`,
+    '',
+    `- This is a new project. Use the original as inspiration, but build an independent product.`,
+    `- If the original prompt below contains checkboxes, those reflect the **original author's progress**, not this project's. Everything here starts from scratch.`,
+    `- The original evolved over ${cloneVersionCount} versions:`,
+    versionGuide,
+    '',
+    `## Instructions for AI`,
+    '',
+    `1. Read the original prompt below to understand the project's structure and approach.`,
+    `2. Reference the version history (v1→v${cloneVersionCount}) to follow a similar step-by-step evolution pattern.`,
+    `3. Start with core features (like v1) and incrementally add functionality.`,
+    `4. Write new pmpt.md and pmpt.ai.md for this project. Do not copy the original content verbatim.`,
+    `5. Update pmpt.md (human-facing) with progress tracking.`,
+    '',
+    '---',
+    '',
+    originalAiMd,
+  ].join('\n');
+
+  writeFileSync(aiMdPath, cloneGuide, 'utf-8');
 
   if (pmptData.plan) {
     writeFileSync(

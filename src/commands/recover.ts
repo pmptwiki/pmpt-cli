@@ -18,16 +18,16 @@ export async function cmdRecover(path?: string): Promise<void> {
   p.intro('pmpt recover');
 
   const docsDir = getDocsDir(projectPath);
-  const pmptMdPath = join(docsDir, 'pmpt.md');
+  const aiMdPath = join(docsDir, 'pmpt.ai.md');
   const planMdPath = join(docsDir, 'plan.md');
 
   // Check current state
-  const currentExists = existsSync(pmptMdPath);
-  const currentContent = currentExists ? readFileSync(pmptMdPath, 'utf-8').trim() : '';
+  const currentExists = existsSync(aiMdPath);
+  const currentContent = currentExists ? readFileSync(aiMdPath, 'utf-8').trim() : '';
 
   if (currentExists && currentContent.length > 100) {
     const proceed = await p.confirm({
-      message: `pmpt.md exists (${currentContent.length} chars). Overwrite with recovered version?`,
+      message: `pmpt.ai.md exists (${currentContent.length} chars). Overwrite with recovered version?`,
       initialValue: false,
     });
     if (p.isCancel(proceed) || !proceed) {
@@ -64,26 +64,30 @@ export async function cmdRecover(path?: string): Promise<void> {
     }
   }
 
-  // 3. Last known good pmpt.md from history
+  // 3. Last known good pmpt.ai.md from history
   const snapshots = getAllSnapshots(projectPath);
-  let lastPmptMd: string | null = null;
-  let lastPmptVersion = 0;
+  let lastAiMd: string | null = null;
+  let lastAiMdVersion = 0;
 
   if (snapshots.length > 0) {
     for (let i = snapshots.length - 1; i >= 0; i--) {
-      const content = resolveFileContent(snapshots, i, 'pmpt.md');
+      // Try pmpt.ai.md first, fall back to pmpt.md for older projects
+      let content = resolveFileContent(snapshots, i, 'pmpt.ai.md');
+      if (!content || content.trim().length <= 50) {
+        content = resolveFileContent(snapshots, i, 'pmpt.md');
+      }
       if (content && content.trim().length > 50) {
-        lastPmptMd = content;
-        lastPmptVersion = snapshots[i].version;
+        lastAiMd = content;
+        lastAiMdVersion = snapshots[i].version;
         break;
       }
     }
   }
 
-  if (lastPmptMd) {
-    context.push(`## Last Known pmpt.md (from v${lastPmptVersion})`);
+  if (lastAiMd) {
+    context.push(`## Last Known AI Prompt (from v${lastAiMdVersion})`);
     context.push('```markdown');
-    context.push(lastPmptMd);
+    context.push(lastAiMd);
     context.push('```');
     context.push('');
   }
@@ -122,7 +126,7 @@ export async function cmdRecover(path?: string): Promise<void> {
   const sources: string[] = [];
   if (planProgress?.answers) sources.push('plan answers');
   if (existsSync(planMdPath)) sources.push('plan.md');
-  if (lastPmptMd) sources.push(`history v${lastPmptVersion}`);
+  if (lastAiMd) sources.push(`history v${lastAiMdVersion}`);
   if (existsSync(pkgPath)) sources.push('package.json');
 
   p.log.info(`Found context: ${sources.join(', ')}`);
@@ -130,11 +134,11 @@ export async function cmdRecover(path?: string): Promise<void> {
   // Build recovery prompt
   const projectName = planProgress?.answers?.projectName || basename(projectPath);
 
-  const prompt = `# pmpt.md Recovery Request
+  const prompt = `# pmpt.ai.md Recovery Request
 
-I need you to regenerate the \`.pmpt/docs/pmpt.md\` file for my project "${projectName}".
+I need you to regenerate the \`.pmpt/docs/pmpt.ai.md\` file for my project "${projectName}".
 
-This file is the main AI prompt document — it contains the product development context that gets pasted into AI tools (Claude Code, Codex, Cursor, etc.) to continue development.
+This file is the AI instruction document — it contains the product development context that gets pasted into AI tools (Claude Code, Codex, Cursor, etc.) to continue development. It is separate from \`pmpt.md\` which is the human-facing project document.
 
 ## Available Context
 
@@ -142,9 +146,12 @@ ${context.join('\n')}
 
 ## Instructions
 
-Based on the context above, regenerate \`.pmpt/docs/pmpt.md\` with the following structure:
+Based on the context above, regenerate \`.pmpt/docs/pmpt.ai.md\` with the following structure:
 
 \`\`\`
+<!-- This file is for AI tools only. Do not edit manually. -->
+<!-- Paste this into Claude Code, Codex, Cursor, or any AI coding tool. -->
+
 # {Project Name} — Product Development Request
 
 ## What I Want to Build
@@ -174,16 +181,16 @@ I'll confirm progress at each step before moving to the next.
 
 ## Documentation Rule
 
-**Important:** Update this document (located at \`.pmpt/docs/pmpt.md\`) at these moments:
+**Important:** When you make progress, update \`.pmpt/docs/pmpt.md\` (the human-facing project document) at these moments:
 - When architecture or tech decisions are finalized
 - When a feature is implemented (mark as done)
 - When a development phase is completed
 - When requirements change or new decisions are made
 \`\`\`
 
-${lastPmptMd ? 'Use the "Last Known pmpt.md" as the primary reference — update it rather than starting from scratch.' : 'Generate a fresh pmpt.md based on the available context.'}
+${lastAiMd ? 'Use the "Last Known AI Prompt" as the primary reference — update it rather than starting from scratch.' : 'Generate a fresh pmpt.ai.md based on the available context.'}
 
-Write the content directly to \`.pmpt/docs/pmpt.md\`. After writing, run \`pmpt save\` to create a snapshot.`;
+Write the content to \`.pmpt/docs/pmpt.ai.md\`. After writing, run \`pmpt save\` to create a snapshot.`;
 
   // Copy to clipboard
   const copied = copyToClipboard(prompt);
@@ -198,7 +205,7 @@ Write the content directly to \`.pmpt/docs/pmpt.md\`. After writing, run \`pmpt 
   p.note(
     [
       '1. Paste the prompt into your AI tool (Claude Code, Cursor, etc.)',
-      '2. The AI will regenerate .pmpt/docs/pmpt.md',
+      '2. The AI will regenerate .pmpt/docs/pmpt.ai.md',
       '3. Run `pmpt save` to snapshot the recovered file',
     ].join('\n'),
     'Next Steps'

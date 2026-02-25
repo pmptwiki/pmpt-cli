@@ -70,7 +70,11 @@ export async function cmdPlan(path?: string, options?: PlanOptions): Promise<voi
       const { existsSync } = await import('fs');
       const { join } = await import('path');
       const pmptDir = getPmptDir(projectPath);
-      const promptPath = join(pmptDir, 'pmpt.md');
+      // Prefer pmpt.ai.md, fall back to pmpt.md for older projects
+      let promptPath = join(pmptDir, 'pmpt.ai.md');
+      if (!existsSync(promptPath)) {
+        promptPath = join(pmptDir, 'pmpt.md');
+      }
 
       try {
         if (existsSync(promptPath)) {
@@ -186,16 +190,22 @@ export async function cmdPlan(path?: string, options?: PlanOptions): Promise<voi
   p.log.success('Two documents have been created:');
   p.log.message('');
 
+  const pmptMdPath = promptPath.replace('pmpt.ai.md', 'pmpt.md');
   const docExplanation = [
     `1. plan.md — Your product overview`,
     `   • Features checklist to track progress`,
     `   • Reference for you`,
     `   Location: ${planPath}`,
     '',
-    `2. pmpt.md — AI prompt (THE IMPORTANT ONE!)`,
+    `2. pmpt.md — Your project document`,
+    `   • Track progress, decisions, and milestones`,
+    `   • Human-readable — write in any language`,
+    `   Location: ${pmptMdPath}`,
+    '',
+    `3. pmpt.ai.md — AI prompt (THE IMPORTANT ONE!)`,
     `   • Copy this to Claude Code / Codex / Cursor`,
     `   • AI will help you build step by step`,
-    `   • AI will update this doc as you progress`,
+    `   • Always in English for best AI performance`,
     `   Location: ${promptPath}`,
   ];
 

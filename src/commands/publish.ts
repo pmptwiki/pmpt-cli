@@ -54,25 +54,25 @@ export async function cmdPublish(path?: string, options?: PublishOptions): Promi
     return;
   }
 
-  // Validate pmpt.md exists and has content
-  const pmptMdPath = join(getDocsDir(projectPath), 'pmpt.md');
-  if (!existsSync(pmptMdPath)) {
-    p.log.error('pmpt.md not found. Run `pmpt plan` to generate it first.');
+  // Validate pmpt.ai.md exists and has content
+  const docsDir = getDocsDir(projectPath);
+  const aiMdPath = join(docsDir, 'pmpt.ai.md');
+  if (!existsSync(aiMdPath)) {
+    p.log.error('pmpt.ai.md not found. Run `pmpt plan` to generate it first.');
     process.exit(1);
   }
-  const pmptMdContent = readFileSync(pmptMdPath, 'utf-8').trim();
-  if (pmptMdContent.length === 0) {
-    p.log.error('pmpt.md is empty. Run `pmpt plan` to generate content.');
+  const aiMdContent = readFileSync(aiMdPath, 'utf-8').trim();
+  if (aiMdContent.length === 0) {
+    p.log.error('pmpt.ai.md is empty. Run `pmpt plan` to generate content.');
     process.exit(1);
   }
 
   // Quality gate
-  const docsDir = getDocsDir(projectPath);
   const trackedFiles = glob.sync('**/*.md', { cwd: docsDir });
   const hasGit = snapshots.some(s => !!s.git);
 
   const quality = computeQuality({
-    pmptMd: pmptMdContent,
+    pmptAiMd: aiMdContent,
     planAnswers: planProgress?.answers ?? null,
     versionCount: snapshots.length,
     docFiles: trackedFiles,

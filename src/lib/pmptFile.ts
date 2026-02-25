@@ -154,8 +154,11 @@ const AI_GUIDE = [
   '- "plan" contains the original intent: what the creator wanted to build, key features, and tech preferences.',
   '- "history" is an ordered array of snapshots (v1, v2, v3...). Each snapshot captures every tracked file at that point in time.',
   '- To understand the evolution, compare files across versions sequentially. Look for what was added, removed, or rewritten between each version.',
-  '- "docs" contains the latest working documents (plan.md for the product plan, pmpt.md for the AI prompt used).',
-  '- "git" fields in each version link snapshots to source code commits, showing when code changes happened alongside document changes.',
+  '- "docs" contains the latest working documents:',
+  '  - plan.md: product plan overview',
+  '  - pmpt.md: human-facing project document (progress, decisions, milestones)',
+  '  - pmpt.ai.md: AI instruction file (paste into AI tools like Claude Code, Codex, Cursor)',
+  '- "git" fields in each version link snapshots to source code commits.',
   '',
   'Key insight: The value of this file is not just the final result — it is the journey. The sequence of iterations reveals how decisions were made, what was tried, and how the product evolved through AI-assisted development.',
 ].join('\n');

@@ -20,7 +20,7 @@ export interface QualityBreakdown {
 const MIN_PUBLISH_SCORE = 40;
 
 export interface QualityInput {
-  pmptMd: string | null;
+  pmptAiMd: string | null;
   planAnswers: { productIdea?: string; coreFeatures?: string; techStack?: string } | null;
   versionCount: number;
   docFiles: string[];
@@ -30,20 +30,20 @@ export interface QualityInput {
 export function computeQuality(data: QualityInput): QualityBreakdown {
   const details: QualityItem[] = [];
 
-  // 1. pmpt.md content (30 points)
+  // 1. pmpt.ai.md content (30 points)
   {
     let score = 0;
     let tip: string | undefined;
-    const len = data.pmptMd?.trim().length ?? 0;
+    const len = data.pmptAiMd?.trim().length ?? 0;
     if (len > 0) score += 10;
     if (len >= 200) score += 10;
     if (len >= 500) score += 10;
     if (score < 30) {
       tip = len === 0
-        ? 'Run `pmpt plan` to generate pmpt.md'
-        : `pmpt.md is ${len} chars — expand to 500+ for full score`;
+        ? 'Run `pmpt plan` to generate pmpt.ai.md'
+        : `pmpt.ai.md is ${len} chars — expand to 500+ for full score`;
     }
-    details.push({ label: 'pmpt.md content', score, maxScore: 30, tip });
+    details.push({ label: 'AI prompt', score, maxScore: 30, tip });
   }
 
   // 2. Plan completeness (25 points)
@@ -82,12 +82,12 @@ export function computeQuality(data: QualityInput): QualityBreakdown {
     let score = 0;
     let tip: string | undefined;
     if (data.docFiles.includes('plan.md')) score += 5;
-    if (data.docFiles.includes('pmpt.md')) score += 5;
+    if (data.docFiles.includes('pmpt.ai.md')) score += 5;
     if (data.docFiles.length > 2) score += 5;
     if (score < 15) {
       const missing: string[] = [];
       if (!data.docFiles.includes('plan.md')) missing.push('plan.md');
-      if (!data.docFiles.includes('pmpt.md')) missing.push('pmpt.md');
+      if (!data.docFiles.includes('pmpt.ai.md')) missing.push('pmpt.ai.md');
       if (data.docFiles.length <= 2) missing.push('additional docs');
       tip = `Add: ${missing.join(', ')}`;
     }

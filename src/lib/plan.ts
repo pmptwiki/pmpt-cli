@@ -59,7 +59,7 @@ export const PLAN_QUESTIONS: PlanQuestion[] = [
   },
 ];
 
-// Generate AI prompt (language-agnostic template)
+// Generate AI instruction file (pmpt.ai.md) — always English, AI-facing
 export function generateAIPrompt(answers: Record<string, string>): string {
   // Parse features (support comma, semicolon, or newline separators)
   const features = answers.coreFeatures
@@ -77,7 +77,10 @@ export function generateAIPrompt(answers: Record<string, string>): string {
     ? `\n## Tech Stack Preferences\n${answers.techStack}\n`
     : '';
 
-  return `# ${answers.projectName} — Product Development Request
+  return `<!-- This file is for AI tools only. Do not edit manually. -->
+<!-- Paste this into Claude Code, Codex, Cursor, or any AI coding tool. -->
+
+# ${answers.projectName} — Product Development Request
 
 ## What I Want to Build
 ${answers.productIdea}
@@ -98,32 +101,54 @@ I'll confirm progress at each step before moving to the next.
 
 ## Documentation Rule
 
-**Important:** Update this document (located at \`.pmpt/docs/pmpt.md\`) at these moments:
+**Important:** When you make progress, update \`.pmpt/docs/pmpt.md\` (the human-facing project document) at these moments:
 - When architecture or tech decisions are finalized
 - When a feature is implemented (mark as done)
 - When a development phase is completed
 - When requirements change or new decisions are made
 
-Add a "## Progress" section below and keep it updated:
-\`\`\`
-## Progress
-- [x] Completed item
-- [ ] Pending item
-\`\`\`
+Keep the Progress and Snapshot Log sections in pmpt.md up to date.
+After significant milestones, run \`pmpt save\` to create a snapshot.
+`;
+}
 
-Also, add a "## Snapshot Log" section to record what was built at each checkpoint:
-\`\`\`
+// Generate human-facing project document (pmpt.md)
+export function generateHumanDoc(answers: Record<string, string>): string {
+  const features = answers.coreFeatures
+    .split(/[,;\n]/)
+    .map((f: string) => f.trim())
+    .filter((f: string) => f)
+    .map((f: string) => `- [ ] ${f}`)
+    .join('\n');
+
+  const contextSection = answers.additionalContext
+    ? `\n## Additional Context\n${answers.additionalContext}\n`
+    : '';
+
+  const techSection = answers.techStack
+    ? `\n## Tech Stack\n${answers.techStack}\n`
+    : '';
+
+  return `# ${answers.projectName}
+
+## Product Idea
+${answers.productIdea}
+${contextSection}
+## Features
+${features}
+${techSection}
+## Progress
+- [ ] Project setup
+- [ ] Core features implementation
+- [ ] Testing & polish
+
 ## Snapshot Log
 ### v1 - Initial Setup
-- Set up project structure
-- Installed dependencies: React, Tailwind
+- Project initialized with pmpt
 
-### v2 - Auth Feature
-- Implemented login/signup
-- Added JWT authentication
-\`\`\`
-
-This helps others understand what was built at each version when they import this project.
+---
+*This document tracks your project progress. Update it as you build.*
+*AI instructions are in \`pmpt.ai.md\` — paste that into your AI tool.*
 `;
 }
 
@@ -203,8 +228,13 @@ export function savePlanDocuments(
   const planContent = generatePlanDocument(answers);
   writeFileSync(planPath, planContent, 'utf-8');
 
-  // Save AI prompt to pmpt folder
-  const promptPath = join(pmptDir, 'pmpt.md');
+  // Save human-facing project document
+  const pmptMdPath = join(pmptDir, 'pmpt.md');
+  const pmptMdContent = generateHumanDoc(answers);
+  writeFileSync(pmptMdPath, pmptMdContent, 'utf-8');
+
+  // Save AI instruction file
+  const promptPath = join(pmptDir, 'pmpt.ai.md');
   const promptContent = generateAIPrompt(answers);
   writeFileSync(promptPath, promptContent, 'utf-8');
 

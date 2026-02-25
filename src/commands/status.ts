@@ -48,14 +48,14 @@ export function cmdStatus(path?: string): void {
 
   // Quality Score
   const docsDir = getDocsDir(projectPath);
-  const pmptMdPath = join(docsDir, 'pmpt.md');
-  const pmptMd = existsSync(pmptMdPath) ? readFileSync(pmptMdPath, 'utf-8') : null;
+  const aiMdPath = join(docsDir, 'pmpt.ai.md');
+  const pmptAiMd = existsSync(aiMdPath) ? readFileSync(aiMdPath, 'utf-8') : null;
 
   const planProgress = getPlanProgress(projectPath);
   const hasGit = snapshots.some(s => !!s.git);
 
   const quality = computeQuality({
-    pmptMd,
+    pmptAiMd,
     planAnswers: planProgress?.answers ?? null,
     versionCount: snapshots.length,
     docFiles: tracked,
