@@ -19,14 +19,14 @@ export function isSafeFilename(filename: string): boolean {
   if (!filename || filename.length === 0) return false;
   // Reject absolute paths and backslashes
   if (/^[/\\]/.test(filename) || /\\/.test(filename)) return false;
-  // Reject .. path components
+  // Reject .. or . path components
   const parts = filename.split('/');
   if (parts.some(p => p === '..' || p === '.')) return false;
   // Double check: resolve and verify it stays within parent
   const base = '/safe';
   const resolved = resolve(base, filename);
   const rel = relative(base, resolved);
-  if (rel.startsWith('..') || resolve(rel) !== resolve(base, rel)) return false;
+  if (rel.startsWith('..')) return false;
   return true;
 }
 
