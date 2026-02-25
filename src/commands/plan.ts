@@ -1,6 +1,6 @@
 import * as p from '@clack/prompts';
 import { resolve } from 'path';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { isInitialized } from '../lib/config.js';
 import { copyToClipboard } from '../lib/clipboard.js';
 import { cmdWatch } from './watch.js';
@@ -14,6 +14,30 @@ import {
 
 interface PlanOptions {
   reset?: boolean;
+  answersFile?: string;
+}
+
+function loadAnswersFromFile(projectPath: string, inputPath: string): Record<string, string> {
+  const filePath = resolve(projectPath, inputPath);
+  if (!existsSync(filePath)) {
+    throw new Error(`Answers file not found: ${filePath}`);
+  }
+
+  const raw = JSON.parse(readFileSync(filePath, 'utf-8')) as Record<string, unknown>;
+  const requiredKeys = ['projectName', 'productIdea', 'coreFeatures'] as const;
+  for (const key of requiredKeys) {
+    if (!raw[key] || String(raw[key]).trim().length === 0) {
+      throw new Error(`Missing required field in answers file: ${key}`);
+    }
+  }
+
+  return {
+    projectName: String(raw.projectName ?? '').trim(),
+    productIdea: String(raw.productIdea ?? '').trim(),
+    additionalContext: String(raw.additionalContext ?? '').trim(),
+    coreFeatures: String(raw.coreFeatures ?? '').trim(),
+    techStack: String(raw.techStack ?? '').trim(),
+  };
 }
 
 export async function cmdPlan(path?: string, options?: PlanOptions): Promise<void> {
@@ -30,22 +54,26 @@ export async function cmdPlan(path?: string, options?: PlanOptions): Promise<voi
 
   // Reset option
   if (options?.reset) {
-    const confirm = await p.confirm({
-      message: 'Restart plan from scratch?',
-      initialValue: false,
-    });
-    if (p.isCancel(confirm) || !confirm) {
-      p.cancel('Cancelled');
-      process.exit(0);
+    if (options.answersFile) {
+      initPlanProgress(projectPath);
+    } else {
+      const confirm = await p.confirm({
+        message: 'Restart plan from scratch?',
+        initialValue: false,
+      });
+      if (p.isCancel(confirm) || !confirm) {
+        p.cancel('Cancelled');
+        process.exit(0);
+      }
+      initPlanProgress(projectPath);
     }
-    initPlanProgress(projectPath);
   }
 
   // Check progress
   let progress = getPlanProgress(projectPath);
 
   // If already completed
-  if (progress?.completed) {
+  if (progress?.completed && !options?.answersFile) {
     p.intro('pmpt plan');
     p.log.success('Plan already completed.');
 
@@ -142,6 +170,38 @@ export async function cmdPlan(path?: string, options?: PlanOptions): Promise<voi
   // Starting fresh
   if (!progress) {
     progress = initPlanProgress(projectPath);
+  }
+
+  // Non-interactive mode for agents/automation
+  if (options?.answersFile) {
+    p.log.info('Plan: non-interactive mode');
+    let answers: Record<string, string>;
+    try {
+      answers = loadAnswersFromFile(projectPath, options.answersFile);
+    } catch (err) {
+      p.log.error(err instanceof Error ? err.message : 'Invalid answers file.');
+      p.outro('');
+      process.exit(1);
+    }
+
+    const s = p.spinner();
+    s.start('Generating documents from answers file...');
+    const { planPath, promptPath } = savePlanDocuments(projectPath, answers);
+    progress.completed = true;
+    progress.answers = answers;
+    savePlanProgress(projectPath, progress);
+    s.stop('Done!');
+
+    const pmptMdPath = promptPath.replace('pmpt.ai.md', 'pmpt.md');
+    p.note(
+      [
+        `plan.md: ${planPath}`,
+        `pmpt.md: ${pmptMdPath}`,
+        `pmpt.ai.md: ${promptPath}`,
+      ].join('\n'),
+      'Generated'
+    );
+    return;
   }
 
   p.intro('pmpt plan — Your Product Journey Starts Here!');

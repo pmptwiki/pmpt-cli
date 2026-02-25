@@ -46,6 +46,7 @@ import { cmdClone } from './commands/clone.js';
 import { cmdBrowse } from './commands/browse.js';
 import { cmdRecover } from './commands/recover.js';
 import { cmdDiff } from './commands/diff.js';
+import { cmdInternalSeed } from './commands/internal-seed.js';
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
@@ -133,6 +134,7 @@ program
   .command('plan [path]')
   .description('Quick product planning with 5 questions — auto-generate AI prompt')
   .option('--reset', 'Restart plan from scratch')
+  .option('--answers-file <file>', 'Load plan answers from JSON file (non-interactive)')
   .action(cmdPlan);
 
 program
@@ -154,6 +156,13 @@ program
   .command('publish [path]')
   .description('Publish project to pmptwiki platform')
   .option('--force', 'Publish even if quality score is below minimum')
+  .option('--non-interactive', 'Run without interactive prompts')
+  .option('--meta-file <file>', 'JSON file with slug, description, tags, category')
+  .option('--slug <slug>', 'Project slug')
+  .option('--description <text>', 'Project description')
+  .option('--tags <csv>', 'Comma-separated tags')
+  .option('--category <id>', 'Project category')
+  .option('--yes', 'Skip confirmation prompt')
   .action(cmdPublish);
 
 program
@@ -180,5 +189,11 @@ program
   .command('recover [path]')
   .description('Generate a recovery prompt to regenerate pmpt.md via AI')
   .action(cmdRecover);
+
+// Internal automation command (hidden from help)
+program
+  .command('internal-seed', { hidden: true })
+  .requiredOption('--spec <file>', 'Seed spec JSON file')
+  .action(cmdInternalSeed);
 
 program.parse();

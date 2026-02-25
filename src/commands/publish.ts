@@ -14,6 +14,53 @@ import { join } from 'path';
 
 interface PublishOptions {
   force?: boolean;
+  nonInteractive?: boolean;
+  metaFile?: string;
+  yes?: boolean;
+  slug?: string;
+  description?: string;
+  tags?: string;
+  category?: string;
+}
+
+const CATEGORY_OPTIONS = [
+  { value: 'web-app',     label: 'Web App' },
+  { value: 'mobile-app',  label: 'Mobile App' },
+  { value: 'cli-tool',    label: 'CLI Tool' },
+  { value: 'api-backend', label: 'API/Backend' },
+  { value: 'ai-ml',       label: 'AI/ML' },
+  { value: 'game',        label: 'Game' },
+  { value: 'library',     label: 'Library' },
+  { value: 'other',       label: 'Other' },
+] as const;
+
+const VALID_CATEGORIES = new Set(CATEGORY_OPTIONS.map((o) => o.value));
+
+function normalizeTags(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .map((v) => String(v).trim().toLowerCase())
+      .filter(Boolean);
+  }
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((t) => t.trim().toLowerCase())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+function loadMetaFile(projectPath: string, filePath: string): Record<string, unknown> {
+  const resolved = resolve(projectPath, filePath);
+  if (!existsSync(resolved)) {
+    throw new Error(`Meta file not found: ${resolved}`);
+  }
+  try {
+    return JSON.parse(readFileSync(resolved, 'utf-8')) as Record<string, unknown>;
+  } catch {
+    throw new Error(`Invalid JSON in meta file: ${resolved}`);
+  }
 }
 
 function readDocsFolder(docsDir: string): Record<string, string> {
@@ -42,7 +89,11 @@ export async function cmdPublish(path?: string, options?: PublishOptions): Promi
     process.exit(1);
   }
 
-  p.intro('pmpt publish');
+  if (options?.nonInteractive) {
+    p.log.info('Publish: non-interactive mode');
+  } else {
+    p.intro('pmpt publish');
+  }
 
   const config = loadConfig(projectPath);
   const snapshots = getAllSnapshots(projectPath);
@@ -120,52 +171,89 @@ export async function cmdPublish(path?: string, options?: PublishOptions): Promi
     || projectName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
 
   // Collect publish info
-  const slug = await p.text({
-    message: 'Project slug (used in URL):',
-    placeholder: defaultSlug,
-    defaultValue: savedSlug || '',
-    validate: (v) => {
-      if (!/^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/.test(v)) {
-        return '3-50 chars, lowercase letters, numbers, and hyphens only.';
+  let slug: string;
+  let description: string;
+  let tags: string[];
+  let category: string;
+
+  if (options?.nonInteractive) {
+    let metaFromFile: Record<string, unknown> = {};
+    if (options.metaFile) {
+      try {
+        metaFromFile = loadMetaFile(projectPath, options.metaFile);
+      } catch (err) {
+        p.log.error(err instanceof Error ? err.message : 'Failed to load meta file.');
+        process.exit(1);
       }
-    },
-  });
-  if (p.isCancel(slug)) { p.cancel('Cancelled'); process.exit(0); }
+    }
 
-  const description = await p.text({
-    message: 'Project description (brief):',
-    placeholder: existing?.description || planProgress?.answers?.productIdea?.slice(0, 100) || '',
-    defaultValue: existing?.description || planProgress?.answers?.productIdea?.slice(0, 200) || '',
-  });
-  if (p.isCancel(description)) { p.cancel('Cancelled'); process.exit(0); }
+    slug = String(
+      options.slug
+      ?? metaFromFile.slug
+      ?? savedSlug
+      ?? defaultSlug
+    ).trim();
+    description = String(
+      options.description
+      ?? metaFromFile.description
+      ?? existing?.description
+      ?? planProgress?.answers?.productIdea?.slice(0, 200)
+      ?? ''
+    ).trim();
+    tags = normalizeTags(options.tags ?? metaFromFile.tags ?? existing?.tags ?? []);
+    category = String(options.category ?? metaFromFile.category ?? existing?.category ?? 'other').trim();
 
-  const tagsInput = await p.text({
-    message: 'Tags (comma-separated):',
-    placeholder: 'react, saas, mvp',
-    defaultValue: existing?.tags?.join(', ') || '',
-  });
-  if (p.isCancel(tagsInput)) { p.cancel('Cancelled'); process.exit(0); }
+    if (!/^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/.test(slug)) {
+      p.log.error('Invalid slug. Use 3-50 chars, lowercase letters, numbers, and hyphens only.');
+      process.exit(1);
+    }
+    if (!description) {
+      p.log.error('Description is required in non-interactive mode.');
+      process.exit(1);
+    }
+    if (!VALID_CATEGORIES.has(category as (typeof CATEGORY_OPTIONS)[number]['value'])) {
+      p.log.error(`Invalid category: ${category}`);
+      p.log.info(`Allowed: ${[...VALID_CATEGORIES].join(', ')}`);
+      process.exit(1);
+    }
+  } else {
+    const slugInput = await p.text({
+      message: 'Project slug (used in URL):',
+      placeholder: defaultSlug,
+      defaultValue: savedSlug || '',
+      validate: (v) => {
+        if (!/^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/.test(v)) {
+          return '3-50 chars, lowercase letters, numbers, and hyphens only.';
+        }
+      },
+    });
+    if (p.isCancel(slugInput)) { p.cancel('Cancelled'); process.exit(0); }
+    slug = slugInput as string;
 
-  const tags = (tagsInput as string)
-    .split(',')
-    .map((t) => t.trim().toLowerCase())
-    .filter(Boolean);
+    const descriptionInput = await p.text({
+      message: 'Project description (brief):',
+      placeholder: existing?.description || planProgress?.answers?.productIdea?.slice(0, 100) || '',
+      defaultValue: existing?.description || planProgress?.answers?.productIdea?.slice(0, 200) || '',
+    });
+    if (p.isCancel(descriptionInput)) { p.cancel('Cancelled'); process.exit(0); }
+    description = descriptionInput as string;
 
-  const category = await p.select({
-    message: 'Project category:',
-    initialValue: existing?.category || 'other',
-    options: [
-      { value: 'web-app',     label: 'Web App' },
-      { value: 'mobile-app',  label: 'Mobile App' },
-      { value: 'cli-tool',    label: 'CLI Tool' },
-      { value: 'api-backend', label: 'API/Backend' },
-      { value: 'ai-ml',       label: 'AI/ML' },
-      { value: 'game',        label: 'Game' },
-      { value: 'library',     label: 'Library' },
-      { value: 'other',       label: 'Other' },
-    ],
-  });
-  if (p.isCancel(category)) { p.cancel('Cancelled'); process.exit(0); }
+    const tagsInput = await p.text({
+      message: 'Tags (comma-separated):',
+      placeholder: 'react, saas, mvp',
+      defaultValue: existing?.tags?.join(', ') || '',
+    });
+    if (p.isCancel(tagsInput)) { p.cancel('Cancelled'); process.exit(0); }
+    tags = normalizeTags(tagsInput);
+
+    const categoryInput = await p.select({
+      message: 'Project category:',
+      initialValue: existing?.category || 'other',
+      options: CATEGORY_OPTIONS as unknown as { value: string; label: string }[],
+    });
+    if (p.isCancel(categoryInput)) { p.cancel('Cancelled'); process.exit(0); }
+    category = categoryInput as string;
+  }
 
   // Build .pmpt content (resolve from optimized snapshots)
   const history: Version[] = snapshots.map((snapshot, i) => ({
@@ -211,13 +299,20 @@ export async function cmdPublish(path?: string, options?: PublishOptions): Promi
     'Publish Preview'
   );
 
-  const confirm = await p.confirm({
-    message: 'Publish this project?',
-    initialValue: true,
-  });
-  if (p.isCancel(confirm) || !confirm) {
-    p.cancel('Cancelled');
-    process.exit(0);
+  if (options?.nonInteractive) {
+    if (!options.yes) {
+      p.log.error('Non-interactive mode requires --yes to confirm publish.');
+      process.exit(1);
+    }
+  } else if (!options?.yes) {
+    const confirm = await p.confirm({
+      message: 'Publish this project?',
+      initialValue: true,
+    });
+    if (p.isCancel(confirm) || !confirm) {
+      p.cancel('Cancelled');
+      process.exit(0);
+    }
   }
 
   // Upload
@@ -228,9 +323,9 @@ export async function cmdPublish(path?: string, options?: PublishOptions): Promi
     const result = await publishProject(auth.token, {
       slug: slug as string,
       pmptContent,
-      description: description as string,
+      description,
       tags,
-      category: category as string,
+      category,
     });
 
     s.stop('Published!');
@@ -238,7 +333,7 @@ export async function cmdPublish(path?: string, options?: PublishOptions): Promi
     // Update config
     if (config) {
       config.lastPublished = new Date().toISOString();
-      config.lastPublishedSlug = slug as string;
+      config.lastPublishedSlug = slug;
       saveConfig(projectPath, config);
     }
 
