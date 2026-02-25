@@ -135,7 +135,7 @@ export async function cmdClone(slug: string): Promise<void> {
     restoreDocs(docsDir, pmptData.docs);
   }
 
-  // Append clone guide to pmpt.md
+  // Prepend clone context to pmpt.md (AI-facing, top of file)
   const pmptMdPath = join(docsDir, 'pmpt.md');
   if (existsSync(pmptMdPath)) {
     const original = readFileSync(pmptMdPath, 'utf-8');
@@ -143,42 +143,63 @@ export async function cmdClone(slug: string): Promise<void> {
     const projectName = pmptData.meta.projectName;
     const versionCount = pmptData.history.length;
 
+    // Detect primary language (Korean if ≥ 20% Korean characters)
+    const koreanChars = (original.match(/[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]/g) || []).length;
+    const totalChars = original.replace(/\s/g, '').length || 1;
+    const isKorean = koreanChars / totalChars > 0.2;
+
     const versionGuide = pmptData.history.map((v) => {
-      const fileList = Object.keys(v.files).join(', ');
-      const summary = v.summary || '';
-      return `- v${v.version}: ${summary || fileList}`;
+      const summary = v.summary || Object.keys(v.files).join(', ');
+      return `- v${v.version}: ${summary}`;
     }).join('\n');
 
-    const cloneGuide = [
+    const cloneContext = isKorean ? [
+      `# ⚠️ 클론된 프로젝트 — 새로 시작하는 프로젝트입니다`,
+      '',
+      `이 문서는 **@${author}**의 프로젝트 **"${projectName}"**에서 클론되었습니다.`,
+      `아래 내용은 원본 저자의 프롬프트이며, **참고용**입니다. 그대로 실행하지 마세요.`,
+      '',
+      `## 이 프로젝트의 맥락`,
+      '',
+      `- 이것은 새로운 프로젝트입니다. 원본을 참고하되, 독립적인 제품을 만들어야 합니다.`,
+      `- 아래 원본 프롬프트에 체크박스(✅/☑️)가 있다면, 그것은 **원본 저자의 진행 상황**입니다. 이 프로젝트에서는 모두 미완료 상태입니다.`,
+      `- 원본은 ${versionCount}개 버전에 걸쳐 점진적으로 발전했습니다:`,
+      versionGuide,
+      '',
+      `## AI에게 요청사항`,
+      '',
+      `1. 아래 원본 프롬프트를 읽고, 프로젝트의 구조와 접근 방식을 이해하세요.`,
+      `2. 원본의 버전 히스토리(v1→v${versionCount})를 참고하여, 비슷한 단계별 진화 패턴으로 구현하세요.`,
+      `3. v1처럼 핵심 기능부터 시작하고, 점진적으로 기능을 추가하세요.`,
+      `4. 이 프로젝트만의 새로운 pmpt.md를 작성해주세요. 원본 내용을 그대로 복사하지 마세요.`,
       '',
       '---',
       '',
-      '## Clone Guide',
+    ].join('\n') : [
+      `# ⚠️ Cloned Project — This is a fresh start`,
       '',
-      `> This prompt was cloned from **@${author}**'s project **"${projectName}"** via \`pmpt clone ${slug}\`.`,
-      `> The content above is the original author's prompt — use it as a reference, not a copy.`,
+      `This document was cloned from **@${author}**'s project **"${projectName}"**.`,
+      `The content below is the original author's prompt — it is for **reference only**. Do not execute it as-is.`,
       '',
-      '### How to use this prompt',
+      `## Context for this project`,
       '',
-      '1. **Read the original prompt above** to understand the project structure and approach.',
-      `2. **Review the version history** (${versionCount} versions) to see how the project evolved:`,
+      `- This is a new project. Use the original as inspiration, but build an independent product.`,
+      `- If the original prompt below contains checkboxes (✅/☑️), those reflect the **original author's progress**, not this project's. Everything here starts from scratch.`,
+      `- The original evolved over ${versionCount} versions:`,
       versionGuide,
-      '3. **Rewrite this prompt for your own project.** Change the project name, features, and tech stack to match your goals.',
-      '4. **Build step by step.** Follow the same evolutionary pattern — start simple (like v1), then iterate.',
       '',
-      '### Suggested first steps',
+      `## Instructions for AI`,
       '',
-      '```',
-      'pmpt plan          # Start your own plan (5 questions)',
-      'pmpt history       # Review the cloned version history',
-      'pmpt diff v1 v2    # See how the original evolved between versions',
-      '```',
+      `1. Read the original prompt below to understand the project's structure and approach.`,
+      `2. Reference the version history (v1→v${versionCount}) to follow a similar step-by-step evolution pattern.`,
+      `3. Start with core features (like v1) and incrementally add functionality.`,
+      `4. Write a new pmpt.md for this project. Do not copy the original content verbatim.`,
       '',
-      '> **Tip:** Delete this "Clone Guide" section after writing your own prompt.',
+      '---',
       '',
     ].join('\n');
 
-    writeFileSync(pmptMdPath, original + cloneGuide, 'utf-8');
+    writeFileSync(pmptMdPath, cloneContext + original, 'utf-8');
   }
 
   if (pmptData.plan) {
