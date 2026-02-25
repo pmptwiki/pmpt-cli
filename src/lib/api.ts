@@ -11,6 +11,8 @@ export interface PublishRequest {
   description: string;
   tags: string[];
   category?: string;
+  productUrl?: string;
+  productUrlType?: string;
 }
 
 export interface PublishResponse {
@@ -32,6 +34,8 @@ export interface ProjectEntry {
   publishedAt: string;
   downloadUrl: string;
   category?: string;
+  productUrl?: string;
+  productUrlType?: string;
 }
 
 export interface ProjectIndex {
@@ -116,6 +120,8 @@ export interface EditRequest {
   description?: string;
   tags?: string[];
   category?: string;
+  productUrl?: string;
+  productUrlType?: string;
 }
 
 export async function editProject(token: string, slug: string, data: EditRequest): Promise<void> {

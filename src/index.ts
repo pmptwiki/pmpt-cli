@@ -162,6 +162,8 @@ program
   .option('--description <text>', 'Project description')
   .option('--tags <csv>', 'Comma-separated tags')
   .option('--category <id>', 'Project category')
+  .option('--product-url <url>', 'Product link URL')
+  .option('--product-url-type <type>', 'Product link type: git or url')
   .option('--yes', 'Skip confirmation prompt')
   .action(cmdPublish);
 

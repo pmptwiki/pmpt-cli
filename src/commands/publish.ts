@@ -21,6 +21,8 @@ interface PublishOptions {
   description?: string;
   tags?: string;
   category?: string;
+  productUrl?: string;
+  productUrlType?: string;
 }
 
 const CATEGORY_OPTIONS = [
@@ -175,6 +177,8 @@ export async function cmdPublish(path?: string, options?: PublishOptions): Promi
   let description: string;
   let tags: string[];
   let category: string;
+  let productUrl: string = '';
+  let productUrlType: string = '';
 
   if (options?.nonInteractive) {
     let metaFromFile: Record<string, unknown> = {};
@@ -202,6 +206,8 @@ export async function cmdPublish(path?: string, options?: PublishOptions): Promi
     ).trim();
     tags = normalizeTags(options.tags ?? metaFromFile.tags ?? existing?.tags ?? []);
     category = String(options.category ?? metaFromFile.category ?? existing?.category ?? 'other').trim();
+    productUrl = String(options.productUrl ?? metaFromFile.productUrl ?? existing?.productUrl ?? '').trim();
+    productUrlType = String(options.productUrlType ?? metaFromFile.productUrlType ?? existing?.productUrlType ?? '').trim();
 
     if (!/^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/.test(slug)) {
       p.log.error('Invalid slug. Use 3-50 chars, lowercase letters, numbers, and hyphens only.');
@@ -253,6 +259,35 @@ export async function cmdPublish(path?: string, options?: PublishOptions): Promi
     });
     if (p.isCancel(categoryInput)) { p.cancel('Cancelled'); process.exit(0); }
     category = categoryInput as string;
+
+    // Product link (optional)
+    const linkTypeInput = await p.select({
+      message: 'Product link (optional):',
+      initialValue: existing?.productUrlType || 'none',
+      options: [
+        { value: 'none', label: 'No link' },
+        { value: 'git',  label: 'Git Repository' },
+        { value: 'url',  label: 'Website / URL' },
+      ] as { value: string; label: string }[],
+    });
+    if (p.isCancel(linkTypeInput)) { p.cancel('Cancelled'); process.exit(0); }
+
+    if (linkTypeInput !== 'none') {
+      productUrlType = linkTypeInput as string;
+      const productUrlInput = await p.text({
+        message: 'Product URL:',
+        placeholder: linkTypeInput === 'git'
+          ? `https://github.com/${auth.username}/${slug}`
+          : 'https://...',
+        defaultValue: existing?.productUrl || '',
+        validate: (v) => {
+          if (!v.trim()) return 'URL is required when link type is selected.';
+          try { new URL(v); } catch { return 'Invalid URL format.'; }
+        },
+      });
+      if (p.isCancel(productUrlInput)) { p.cancel('Cancelled'); process.exit(0); }
+      productUrl = productUrlInput as string;
+    }
   }
 
   // Build .pmpt content (resolve from optimized snapshots)
@@ -295,6 +330,7 @@ export async function cmdPublish(path?: string, options?: PublishOptions): Promi
       `Author: @${auth.username}`,
       `Category: ${category}`,
       tags.length ? `Tags: ${tags.join(', ')}` : '',
+      productUrl ? `Product: ${productUrl} (${productUrlType})` : '',
     ].filter(Boolean).join('\n'),
     'Publish Preview'
   );
@@ -326,6 +362,7 @@ export async function cmdPublish(path?: string, options?: PublishOptions): Promi
       description,
       tags,
       category,
+      ...(productUrl && { productUrl, productUrlType }),
     });
 
     s.stop('Published!');
