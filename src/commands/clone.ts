@@ -1,6 +1,6 @@
 import * as p from '@clack/prompts';
 import { join, dirname, resolve, relative, sep } from 'path';
-import { existsSync, mkdirSync, writeFileSync, readdirSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync, readFileSync, readdirSync } from 'fs';
 import { isInitialized, getConfigDir, getHistoryDir, getDocsDir, initializeProject } from '../lib/config.js';
 import { validatePmptFile, isSafeFilename, type PmptFile } from '../lib/pmptFile.js';
 import { fetchPmptFile, trackClone } from '../lib/api.js';
@@ -133,6 +133,52 @@ export async function cmdClone(slug: string): Promise<void> {
 
   if (pmptData.docs) {
     restoreDocs(docsDir, pmptData.docs);
+  }
+
+  // Append clone guide to pmpt.md
+  const pmptMdPath = join(docsDir, 'pmpt.md');
+  if (existsSync(pmptMdPath)) {
+    const original = readFileSync(pmptMdPath, 'utf-8');
+    const author = pmptData.meta.author || 'unknown';
+    const projectName = pmptData.meta.projectName;
+    const versionCount = pmptData.history.length;
+
+    const versionGuide = pmptData.history.map((v) => {
+      const fileList = Object.keys(v.files).join(', ');
+      const summary = v.summary || '';
+      return `- v${v.version}: ${summary || fileList}`;
+    }).join('\n');
+
+    const cloneGuide = [
+      '',
+      '---',
+      '',
+      '## Clone Guide',
+      '',
+      `> This prompt was cloned from **@${author}**'s project **"${projectName}"** via \`pmpt clone ${slug}\`.`,
+      `> The content above is the original author's prompt — use it as a reference, not a copy.`,
+      '',
+      '### How to use this prompt',
+      '',
+      '1. **Read the original prompt above** to understand the project structure and approach.',
+      `2. **Review the version history** (${versionCount} versions) to see how the project evolved:`,
+      versionGuide,
+      '3. **Rewrite this prompt for your own project.** Change the project name, features, and tech stack to match your goals.',
+      '4. **Build step by step.** Follow the same evolutionary pattern — start simple (like v1), then iterate.',
+      '',
+      '### Suggested first steps',
+      '',
+      '```',
+      'pmpt plan          # Start your own plan (5 questions)',
+      'pmpt history       # Review the cloned version history',
+      'pmpt diff v1 v2    # See how the original evolved between versions',
+      '```',
+      '',
+      '> **Tip:** Delete this "Clone Guide" section after writing your own prompt.',
+      '',
+    ].join('\n');
+
+    writeFileSync(pmptMdPath, original + cloneGuide, 'utf-8');
   }
 
   if (pmptData.plan) {
