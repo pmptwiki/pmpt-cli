@@ -1,4 +1,33 @@
 #!/usr/bin/env node
+
+// Node.js version check (must run before any imports that use modern syntax)
+const [major] = process.versions.node.split('.').map(Number);
+if (major < 18) {
+  console.error(
+    `\n  pmpt requires Node.js 18 or higher.\n` +
+    `  Current version: ${process.version}\n\n` +
+    `  Update Node.js: https://nodejs.org\n`
+  );
+  process.exit(1);
+}
+
+// Global error handlers — show friendly message instead of stack trace
+process.on('uncaughtException', (err) => {
+  const msg = err instanceof Error ? err.message : String(err);
+  console.error(`\n  Error: ${msg}\n`);
+  console.error(`  If this keeps happening, please report at:`);
+  console.error(`  https://github.com/pmptwiki/pmpt-cli/issues\n`);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  const msg = reason instanceof Error ? reason.message : String(reason);
+  console.error(`\n  Error: ${msg}\n`);
+  console.error(`  If this keeps happening, please report at:`);
+  console.error(`  https://github.com/pmptwiki/pmpt-cli/issues\n`);
+  process.exit(1);
+});
+
 import { Command } from 'commander';
 import { cmdInit } from './commands/init.js';
 import { cmdStatus } from './commands/status.js';
