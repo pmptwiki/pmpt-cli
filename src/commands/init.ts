@@ -2,7 +2,7 @@ import * as p from '@clack/prompts';
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 import { initializeProject, isInitialized } from '../lib/config.js';
-import { isGitRepo, getGitInfo, formatGitInfo } from '../lib/git.js';
+import { isGitRepo, getGitInfo, formatGitInfo, getCommitCount } from '../lib/git.js';
 import { cmdPlan } from './plan.js';
 import { scanProject, scanResultToAnswers } from '../lib/scanner.js';
 import { savePlanDocuments, initPlanProgress, savePlanProgress } from '../lib/plan.js';
@@ -102,6 +102,10 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
     }
   }
 
+  // Detect project origin
+  const gitCommits = isGit ? getCommitCount(projectPath) : 0;
+  const origin = gitCommits >= 10 ? 'adopted' as const : 'new' as const;
+
   const s = p.spinner();
   s.start('Initializing project...');
 
@@ -109,6 +113,8 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
     const config = initializeProject(projectPath, {
       repo: repoUrl,
       trackGit: isGit,
+      origin,
+      gitCommitsAtInit: isGit ? gitCommits : undefined,
     });
     s.stop('Initialized');
 

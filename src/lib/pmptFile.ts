@@ -69,6 +69,8 @@ const MetaSchema = z.object({
   description: z.string().optional(),
   createdAt: z.string(),
   exportedAt: z.string(),
+  origin: z.enum(['new', 'adopted']).optional(),
+  gitCommitsAtInit: z.number().optional(),
 });
 
 // Full .pmpt file schema

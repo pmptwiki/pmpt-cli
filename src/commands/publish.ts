@@ -375,6 +375,8 @@ export async function cmdPublish(path?: string, options?: PublishOptions): Promi
     description: description as string,
     createdAt: config?.createdAt || new Date().toISOString(),
     exportedAt: new Date().toISOString(),
+    origin: config?.origin,
+    gitCommitsAtInit: config?.gitCommitsAtInit,
   };
 
   const planAnswers: PlanAnswers | undefined = planProgress?.answers

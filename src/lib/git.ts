@@ -110,6 +110,14 @@ export function isCommitMatch(path: string, expectedCommit: string): boolean {
 }
 
 /**
+ * Count total commits in the repository
+ */
+export function getCommitCount(path: string): number {
+  const count = git(path, 'rev-list --count HEAD');
+  return count ? parseInt(count, 10) : 0;
+}
+
+/**
  * Convert git info to human-readable string
  */
 export function formatGitInfo(info: GitInfo): string {

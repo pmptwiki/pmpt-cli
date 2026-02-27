@@ -118,6 +118,8 @@ export async function cmdUpdate(path?: string): Promise<void> {
     description: existing.description,
     createdAt: config?.createdAt || new Date().toISOString(),
     exportedAt: new Date().toISOString(),
+    origin: config?.origin,
+    gitCommitsAtInit: config?.gitCommitsAtInit,
   };
 
   const planAnswers: PlanAnswers | undefined = planProgress?.answers

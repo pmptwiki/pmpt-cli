@@ -11,6 +11,9 @@ export interface ProjectConfig {
   // Git integration settings
   repo?: string;
   trackGit?: boolean;
+  // Project origin tracking
+  origin?: 'new' | 'adopted';
+  gitCommitsAtInit?: number;
 }
 
 const CONFIG_DIR = '.pmpt';
@@ -40,6 +43,8 @@ export function isInitialized(projectPath: string): boolean {
 export interface InitOptions {
   repo?: string;
   trackGit?: boolean;
+  origin?: 'new' | 'adopted';
+  gitCommitsAtInit?: number;
 }
 
 export function initializeProject(projectPath: string, options?: InitOptions): ProjectConfig {
@@ -62,6 +67,8 @@ export function initializeProject(projectPath: string, options?: InitOptions): P
     createdAt: new Date().toISOString(),
     repo: options?.repo,
     trackGit: options?.trackGit ?? true,
+    origin: options?.origin,
+    gitCommitsAtInit: options?.gitCommitsAtInit,
   };
 
   saveConfig(projectPath, config);
