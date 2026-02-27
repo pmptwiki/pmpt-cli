@@ -95,15 +95,15 @@ export async function cmdClone(slug: string): Promise<void> {
   s.stop('Download complete');
 
   // Show summary
-  p.note(
-    [
-      `Project: ${pmptData.meta.projectName}`,
-      `Versions: ${pmptData.history.length}`,
-      pmptData.meta.author ? `Author: @${pmptData.meta.author}` : '',
-      pmptData.meta.description ? `Description: ${pmptData.meta.description.slice(0, 80)}` : '',
-    ].filter(Boolean).join('\n'),
-    'Project Info'
-  );
+  const infoLines = [
+    `Project: ${pmptData.meta.projectName}`,
+    `Versions: ${pmptData.history.length}`,
+    pmptData.meta.author ? `Author: @${pmptData.meta.author}` : '',
+    pmptData.meta.description ? `\n${pmptData.meta.description}` : '',
+    pmptData.plan?.productIdea ? `\n💡 ${pmptData.plan.productIdea.slice(0, 120)}` : '',
+    pmptData.plan?.techStack ? `🛠  ${pmptData.plan.techStack.slice(0, 80)}` : '',
+  ];
+  p.note(infoLines.filter(Boolean).join('\n'), 'Project Info');
 
   const projectPath = process.cwd();
 
