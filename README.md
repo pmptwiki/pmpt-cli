@@ -2,17 +2,15 @@
 
 # pmpt
 
-**Answer 5 questions. Start building with AI.**
+**Record and share your AI-driven product development journey.**
 
 [![npm version](https://img.shields.io/npm/v/pmpt-cli.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/pmpt-cli)
 [![license](https://img.shields.io/github/license/pmptwiki/pmpt-cli?style=flat-square&v=2)](https://github.com/pmptwiki/pmpt-cli/blob/main/LICENSE)
 [![node](https://img.shields.io/badge/node-%3E%3D18-brightgreen?style=flat-square)](https://github.com/pmptwiki/pmpt-cli)
 
-The CLI that turns your idea into an AI-ready prompt in 30 seconds.
+Plan with 5 questions. Build with AI. Save every version. Share and reproduce.
 
-No coding required. No complex setup. Just answer 5 questions.
-
-[Quick Start](#quick-start) · [Commands](#commands) · [How It Works](#how-it-works) · [Explore Projects](#explore-projects)
+[Quick Start](#quick-start) · [Commands](#commands) · [MCP Server](#mcp-server) · [Explore Projects](#explore-projects)
 
 </div>
 
@@ -57,7 +55,7 @@ pmpt save
 pmpt login && pmpt publish
 
 # Bonus: Explore what others are building
-pmpt browse
+pmpt explore
 ```
 
 ---
@@ -113,14 +111,47 @@ The generated prompt is **automatically copied to your clipboard**. Just paste i
 | Command | Description |
 |---------|-------------|
 | `pmpt login` | Authenticate via GitHub (one-time) |
-| `pmpt publish` | Publish your project (requires pmpt.md, quality ≥ 40) |
-| `pmpt publish --force` | Publish even if quality score is below minimum |
+| `pmpt publish` | Publish your project (requires quality score ≥ 40) |
 | `pmpt edit` | Edit published project metadata (description, tags, category) |
 | `pmpt unpublish` | Remove a published project from pmptwiki |
 | `pmpt clone <slug>` | Clone and reproduce someone's project |
-| `pmpt browse` | Browse and search published projects |
+| `pmpt explore` | Open pmptwiki.com/explore in your browser |
+
+> Quality score below 40? pmpt copies an **AI improvement prompt** to your clipboard — paste it into your AI tool to get help improving your project.
 
 > See the full documentation at [pmptwiki.com/docs](https://pmptwiki.com/docs)
+
+---
+
+## MCP Server
+
+pmpt includes a built-in [MCP](https://modelcontextprotocol.io) server so AI tools can interact with pmpt directly. This means Claude Code, Cursor, and other MCP-compatible tools can save snapshots, check status, and review history without you typing commands.
+
+### Setup
+
+Add to your `.mcp.json` (or IDE MCP config):
+
+```json
+{
+  "mcpServers": {
+    "pmpt": {
+      "command": "pmpt-mcp"
+    }
+  }
+}
+```
+
+### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `pmpt_save` | Save a snapshot after completing features, fixes, or milestones |
+| `pmpt_status` | Check tracked files, snapshot count, and quality score |
+| `pmpt_history` | View version history with git commit info |
+| `pmpt_diff` | Compare two versions, or a version against working copy |
+| `pmpt_quality` | Check quality score and publish readiness |
+
+All tools accept an optional `projectPath` parameter (defaults to cwd).
 
 ---
 
@@ -158,7 +189,8 @@ your-project/
     ├── config.json        # Project configuration
     ├── docs/              # Generated documents
     │   ├── plan.md        # Product plan (features checklist)
-    │   └── pmpt.md        # AI-ready prompt
+    │   ├── pmpt.md        # Progress tracking & decisions
+    │   └── pmpt.ai.md     # AI-ready prompt (project context & instructions)
     └── .history/          # Auto-saved version history
         ├── v1-2024-02-20/
         ├── v2-2024-02-21/
@@ -186,7 +218,8 @@ A single portable file containing your entire development journey:
   },
   "docs": {
     "plan.md": "...",
-    "pmpt.md": "..."
+    "pmpt.md": "...",
+    "pmpt.ai.md": "..."
   },
   "history": [
     { "version": 1, "timestamp": "...", "files": {} },
@@ -210,11 +243,11 @@ Share it. Clone it. Reproduce it.
 
 ## Explore Projects
 
-Don't know what to build? Browse what others have created with AI.
+Don't know what to build? See what others have created with AI.
 
 ```bash
-# Discover projects from the community
-pmpt browse
+# Open the explore page
+pmpt explore
 
 # Found something interesting? Clone it and make it yours
 pmpt clone budget-tracker-app
@@ -222,7 +255,7 @@ pmpt clone budget-tracker-app
 
 **[Explore Projects on pmptwiki.com →](https://pmptwiki.com/explore)**
 
-See how others planned their products, what prompts they used, and how their projects evolved step by step. Clone any project and use it as a starting point for your own.
+Clone any project to see how it was planned, what prompts were used, and how it evolved step by step. The clone output shows the product idea, tech stack, and full version history.
 
 ---
 
