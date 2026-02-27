@@ -442,6 +442,7 @@ export async function cmdPublish(path?: string, options?: PublishOptions): Promi
     if (config) {
       config.lastPublished = new Date().toISOString();
       config.lastPublishedSlug = slug;
+      config.lastPublishedVersionCount = snapshots.length;
       saveConfig(projectPath, config);
     }
 

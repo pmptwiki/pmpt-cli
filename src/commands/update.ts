@@ -78,6 +78,14 @@ export async function cmdUpdate(path?: string): Promise<void> {
     return;
   }
 
+  // Check if already up to date
+  if (config?.lastPublishedVersionCount === snapshots.length) {
+    p.log.success('Already up to date — no new snapshots since last publish.');
+    p.log.info('Run `pmpt save` to create a new snapshot, then try again.');
+    p.outro('');
+    return;
+  }
+
   // Quality gate
   const docsDir = getDocsDir(projectPath);
   const aiMdPath = join(docsDir, 'pmpt.ai.md');
@@ -163,6 +171,7 @@ export async function cmdUpdate(path?: string): Promise<void> {
 
     if (config) {
       config.lastPublished = new Date().toISOString();
+      config.lastPublishedVersionCount = snapshots.length;
       saveConfig(projectPath, config);
     }
 

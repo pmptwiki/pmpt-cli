@@ -8,6 +8,7 @@ export interface ProjectConfig {
   createdAt: string;
   lastPublished?: string;
   lastPublishedSlug?: string;
+  lastPublishedVersionCount?: number;
   // Git integration settings
   repo?: string;
   trackGit?: boolean;
