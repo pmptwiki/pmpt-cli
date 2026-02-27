@@ -43,7 +43,7 @@ import { cmdPublish } from './commands/publish.js';
 import { cmdEdit } from './commands/edit.js';
 import { cmdUnpublish } from './commands/unpublish.js';
 import { cmdClone } from './commands/clone.js';
-import { cmdBrowse } from './commands/browse.js';
+import { cmdExplore } from './commands/browse.js';
 import { cmdRecover } from './commands/recover.js';
 import { cmdDiff } from './commands/diff.js';
 import { cmdInternalSeed } from './commands/internal-seed.js';
@@ -73,7 +73,7 @@ Examples:
   $ pmpt login                   Authenticate with pmptwiki
   $ pmpt publish                 Publish project to pmptwiki
   $ pmpt clone <slug>            Clone a project from pmptwiki
-  $ pmpt browse                  Browse published projects
+  $ pmpt explore                  Explore projects on pmptwiki.com
   $ pmpt recover                 Recover damaged pmpt.md via AI
 
 Documentation: https://pmptwiki.com
@@ -183,9 +183,9 @@ program
   .action(cmdClone);
 
 program
-  .command('browse')
-  .description('Browse and search published projects')
-  .action(cmdBrowse);
+  .command('explore')
+  .description('Open pmptwiki.com to explore and search projects')
+  .action(cmdExplore);
 
 program
   .command('recover [path]')
