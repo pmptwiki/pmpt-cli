@@ -7,13 +7,13 @@ import { getPlanProgress } from '../lib/plan.js';
 import { createPmptFile, SCHEMA_VERSION, type Version, type ProjectMeta, type PlanAnswers } from '../lib/pmptFile.js';
 import { loadAuth } from '../lib/auth.js';
 import { publishProject, fetchProjects, type ProjectEntry } from '../lib/api.js';
-import { computeQuality } from '../lib/quality.js';
+import { computeQuality, type QualityBreakdown } from '../lib/quality.js';
+import { copyToClipboard } from '../lib/clipboard.js';
 import pc from 'picocolors';
 import glob from 'fast-glob';
 import { join } from 'path';
 
 interface PublishOptions {
-  force?: boolean;
   nonInteractive?: boolean;
   metaFile?: string;
   yes?: boolean;
@@ -37,6 +37,31 @@ const CATEGORY_OPTIONS = [
 ] as const;
 
 const VALID_CATEGORIES = new Set(CATEGORY_OPTIONS.map((o) => o.value));
+
+function generateImprovementPrompt(quality: QualityBreakdown): string {
+  const missing: string[] = [];
+  for (const item of quality.details) {
+    if (item.score < item.maxScore && item.tip) {
+      missing.push(`- ${item.label}: ${item.tip}`);
+    }
+  }
+
+  return [
+    `My pmpt project scored ${quality.score}/100 (Grade ${quality.grade}) and needs at least 40 to publish.`,
+    '',
+    'Areas to improve:',
+    ...missing,
+    '',
+    'Please help me improve the project quality:',
+    '',
+    '1. Read `.pmpt/docs/pmpt.ai.md` and `.pmpt/docs/pmpt.md`',
+    '2. Expand pmpt.ai.md to 500+ characters with clear project context, architecture, and instructions for AI',
+    '3. Make sure pmpt.md has progress tracking, decisions, and a snapshot log',
+    '4. If plan.md is missing, create it with product overview',
+    '5. After improving, run `pmpt save` to create a new snapshot',
+    '6. Then try `pmpt publish` again',
+  ].join('\n');
+}
 
 function normalizeTags(value: unknown): string[] {
   if (Array.isArray(value)) {
@@ -150,11 +175,23 @@ export async function cmdPublish(path?: string, options?: PublishOptions): Promi
     if (tips.length > 0) {
       p.log.info('How to improve:\n' + tips.join('\n'));
     }
-    if (!options?.force) {
-      p.log.error('Use `pmpt publish --force` to publish anyway.');
-      process.exit(1);
+
+    // Generate and copy AI improvement prompt
+    const improvementPrompt = generateImprovementPrompt(quality);
+    const copied = copyToClipboard(improvementPrompt);
+    if (copied) {
+      p.log.message('');
+      p.log.success('AI improvement prompt copied to clipboard!');
+      p.log.message('  Paste it into Claude Code, Cursor, or any AI tool to improve your project.');
+      p.log.message('  After improving, run `pmpt save` then `pmpt publish` again.');
+    } else {
+      p.log.message('');
+      p.note(improvementPrompt, 'AI Improvement Prompt');
+      p.log.message('  Copy the prompt above and paste into your AI tool.');
     }
-    p.log.warn('Publishing with --force despite low quality score.');
+
+    p.outro('');
+    process.exit(1);
   }
 
   const projectName = planProgress?.answers?.projectName || basename(projectPath);

@@ -155,7 +155,6 @@ program
 program
   .command('publish [path]')
   .description('Publish project to pmptwiki platform')
-  .option('--force', 'Publish even if quality score is below minimum')
   .option('--non-interactive', 'Run without interactive prompts')
   .option('--meta-file <file>', 'JSON file with slug, description, tags, category')
   .option('--slug <slug>', 'Project slug')

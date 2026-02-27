@@ -131,7 +131,6 @@ export async function cmdInternalSeed(options?: InternalSeedOptions): Promise<vo
 
   if (spec.publish?.enabled) {
     await cmdPublish(projectPath, {
-      force: spec.publish.force ?? false,
       nonInteractive: true,
       yes: spec.publish.yes ?? true,
       metaFile: spec.publish.metaFile ? resolve(specDir, spec.publish.metaFile) : undefined,
