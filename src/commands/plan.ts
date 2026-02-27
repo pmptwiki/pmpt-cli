@@ -111,17 +111,14 @@ export async function cmdPlan(path?: string, options?: PlanOptions): Promise<voi
           if (action === 'copy') {
             const copied = copyToClipboard(content);
             if (copied) {
-              p.log.success('AI prompt copied to clipboard!');
               p.log.message('');
-
-              // Eye-catching next step banner
               const banner = [
-                '',
                 '┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓',
                 '┃                                                        ┃',
                 '┃   📋  NEXT STEP                                        ┃',
                 '┃                                                        ┃',
-                '┃   Open your AI coding tool and press:           ┃',
+                '┃   AI prompt is already copied to clipboard!             ┃',
+                '┃   Open your AI coding tool and paste it:               ┃',
                 '┃                                                        ┃',
                 '┃              ⌘ + V  (Mac)                              ┃',
                 '┃             Ctrl + V (Windows/Linux)                   ┃',
@@ -277,17 +274,13 @@ export async function cmdPlan(path?: string, options?: PlanOptions): Promise<voi
 
   if (copied) {
     p.log.message('');
-    p.log.success('AI prompt copied to clipboard!');
-    p.log.message('');
-
-    // Eye-catching next step banner
     const banner = [
-      '',
       '┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓',
       '┃                                                        ┃',
       '┃   📋  NEXT STEP                                        ┃',
       '┃                                                        ┃',
-      '┃   Open your AI coding tool and press:           ┃',
+      '┃   AI prompt is already copied to clipboard!             ┃',
+      '┃   Open your AI coding tool and paste it:               ┃',
       '┃                                                        ┃',
       '┃              ⌘ + V  (Mac)                              ┃',
       '┃             Ctrl + V (Windows/Linux)                   ┃',

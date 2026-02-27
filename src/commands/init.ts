@@ -238,18 +238,20 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
         const content = readFileSync(promptPath, 'utf-8');
         const copied = copyToClipboard(content);
 
-        if (copied) {
-          p.log.message('');
-          p.log.success('AI prompt copied to clipboard!');
-          p.log.message('');
+        p.log.info('Tips:');
+        p.log.message('  pmpt plan     — View or edit your AI prompt');
+        p.log.message('  pmpt save     — Save a snapshot anytime');
+        p.log.message('  pmpt watch    — Auto-save on file changes');
+        p.log.message('');
 
+        if (copied) {
           const banner = [
-            '',
             '┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓',
             '┃                                                        ┃',
             '┃   📋  NEXT STEP                                        ┃',
             '┃                                                        ┃',
-            '┃   Open your AI coding tool and press:           ┃',
+            '┃   AI prompt is already copied to clipboard!             ┃',
+            '┃   Open your AI coding tool and paste it:               ┃',
             '┃                                                        ┃',
             '┃              ⌘ + V  (Mac)                              ┃',
             '┃             Ctrl + V (Windows/Linux)                   ┃',
@@ -265,10 +267,6 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
           p.log.info(`Read it at: ${promptPath}`);
         }
 
-        p.log.info('Tips:');
-        p.log.message('  pmpt plan     — View or edit your AI prompt');
-        p.log.message('  pmpt save     — Save a snapshot anytime');
-        p.log.message('  pmpt watch    — Auto-save on file changes');
         p.outro('Ready to go!');
       } else if (scanChoice === 'manual') {
         p.log.message('');

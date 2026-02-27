@@ -230,23 +230,25 @@ export async function cmdClone(slug: string): Promise<void> {
   const aiContent = readFileSync(aiMdPath, 'utf-8');
   const copied = copyToClipboard(aiContent);
 
-  if (copied) {
-    p.log.message('');
-    p.log.success('AI prompt copied to clipboard!');
-    p.log.message('');
+  p.log.info('Tips:');
+  p.log.message('  pmpt history    — view version history');
+  p.log.message('  pmpt plan       — view or edit AI prompt');
+  p.log.message('  pmpt save       — save a new snapshot');
+  p.log.message('');
 
+  if (copied) {
     const banner = [
-      '',
       '┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓',
       '┃                                                        ┃',
       '┃   📋  NEXT STEP                                        ┃',
       '┃                                                        ┃',
-      '┃   Open your AI coding tool and press:           ┃',
+      '┃   AI prompt is already copied to clipboard!             ┃',
+      '┃   Open your AI coding tool and paste it:               ┃',
       '┃                                                        ┃',
       '┃              ⌘ + V  (Mac)                              ┃',
       '┃             Ctrl + V (Windows/Linux)                   ┃',
       '┃                                                        ┃',
-      '┃   Your cloned project context is ready! 🚀             ┃',
+      '┃   Your project context is ready! 🚀                    ┃',
       '┃                                                        ┃',
       '┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛',
       '',
@@ -257,9 +259,5 @@ export async function cmdClone(slug: string): Promise<void> {
     p.log.info(`Read it at: ${aiMdPath}`);
   }
 
-  p.log.info('Tips:');
-  p.log.message('  pmpt history    — view version history');
-  p.log.message('  pmpt plan       — view or edit AI prompt');
-  p.log.message('  pmpt save       — save a new snapshot');
   p.outro('Project cloned!');
 }
