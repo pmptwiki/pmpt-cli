@@ -260,70 +260,102 @@ export async function cmdPublish(path?: string, options?: PublishOptions): Promi
       process.exit(1);
     }
   } else {
-    const slugInput = await p.text({
-      message: 'Project slug (used in URL):',
-      placeholder: defaultSlug,
-      defaultValue: savedSlug || '',
-      validate: (v) => {
-        if (!/^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/.test(v)) {
-          return '3-50 chars, lowercase letters, numbers, and hyphens only.';
-        }
-      },
-    });
-    if (p.isCancel(slugInput)) { p.cancel('Cancelled'); process.exit(0); }
-    slug = slugInput as string;
+    // If previously published, offer to reuse settings
+    let reuseExisting = false;
+    if (existing && savedSlug) {
+      const categoryLabel = CATEGORY_OPTIONS.find((o) => o.value === existing.category)?.label ?? existing.category ?? '';
+      p.note(
+        [
+          `Slug: ${savedSlug}`,
+          `Description: ${existing.description || '(none)'}`,
+          existing.tags?.length ? `Tags: ${existing.tags.join(', ')}` : '',
+          categoryLabel ? `Category: ${categoryLabel}` : '',
+          existing.productUrl ? `Product: ${existing.productUrl}` : '',
+        ].filter(Boolean).join('\n'),
+        'Previous Settings',
+      );
 
-    const descriptionInput = await p.text({
-      message: 'Project description (brief):',
-      placeholder: existing?.description || planProgress?.answers?.productIdea?.slice(0, 100) || '',
-      defaultValue: existing?.description || planProgress?.answers?.productIdea?.slice(0, 200) || '',
-    });
-    if (p.isCancel(descriptionInput)) { p.cancel('Cancelled'); process.exit(0); }
-    description = descriptionInput as string;
+      const reuse = await p.confirm({
+        message: 'Publish with same settings?',
+        initialValue: true,
+      });
+      if (p.isCancel(reuse)) { p.cancel('Cancelled'); process.exit(0); }
+      reuseExisting = !!reuse;
+    }
 
-    const tagsInput = await p.text({
-      message: 'Tags (comma-separated):',
-      placeholder: 'react, saas, mvp',
-      defaultValue: existing?.tags?.join(', ') || '',
-    });
-    if (p.isCancel(tagsInput)) { p.cancel('Cancelled'); process.exit(0); }
-    tags = normalizeTags(tagsInput);
-
-    const categoryInput = await p.select({
-      message: 'Project category:',
-      initialValue: existing?.category || 'other',
-      options: CATEGORY_OPTIONS as unknown as { value: string; label: string }[],
-    });
-    if (p.isCancel(categoryInput)) { p.cancel('Cancelled'); process.exit(0); }
-    category = categoryInput as string;
-
-    // Product link (optional)
-    const linkTypeInput = await p.select({
-      message: 'Product link (optional):',
-      initialValue: existing?.productUrlType || 'none',
-      options: [
-        { value: 'none', label: 'No link' },
-        { value: 'git',  label: 'Git Repository' },
-        { value: 'url',  label: 'Website / URL' },
-      ] as { value: string; label: string }[],
-    });
-    if (p.isCancel(linkTypeInput)) { p.cancel('Cancelled'); process.exit(0); }
-
-    if (linkTypeInput !== 'none') {
-      productUrlType = linkTypeInput as string;
-      const productUrlInput = await p.text({
-        message: 'Product URL:',
-        placeholder: linkTypeInput === 'git'
-          ? `https://github.com/${auth.username}/${slug}`
-          : 'https://...',
-        defaultValue: existing?.productUrl || '',
+    if (reuseExisting && existing && savedSlug) {
+      slug = savedSlug;
+      description = existing.description || '';
+      tags = existing.tags || [];
+      category = existing.category || 'other';
+      productUrl = existing.productUrl || '';
+      productUrlType = existing.productUrlType || '';
+    } else {
+      const slugInput = await p.text({
+        message: 'Project slug (used in URL):',
+        placeholder: defaultSlug,
+        defaultValue: savedSlug || '',
         validate: (v) => {
-          if (!v.trim()) return 'URL is required when link type is selected.';
-          try { new URL(v); } catch { return 'Invalid URL format.'; }
+          if (!/^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$/.test(v)) {
+            return '3-50 chars, lowercase letters, numbers, and hyphens only.';
+          }
         },
       });
-      if (p.isCancel(productUrlInput)) { p.cancel('Cancelled'); process.exit(0); }
-      productUrl = productUrlInput as string;
+      if (p.isCancel(slugInput)) { p.cancel('Cancelled'); process.exit(0); }
+      slug = slugInput as string;
+
+      const descriptionInput = await p.text({
+        message: 'Project description (brief):',
+        placeholder: existing?.description || planProgress?.answers?.productIdea?.slice(0, 100) || '',
+        defaultValue: existing?.description || planProgress?.answers?.productIdea?.slice(0, 200) || '',
+      });
+      if (p.isCancel(descriptionInput)) { p.cancel('Cancelled'); process.exit(0); }
+      description = descriptionInput as string;
+
+      const tagsInput = await p.text({
+        message: 'Tags (comma-separated):',
+        placeholder: 'react, saas, mvp',
+        defaultValue: existing?.tags?.join(', ') || '',
+      });
+      if (p.isCancel(tagsInput)) { p.cancel('Cancelled'); process.exit(0); }
+      tags = normalizeTags(tagsInput);
+
+      const categoryInput = await p.select({
+        message: 'Project category:',
+        initialValue: existing?.category || 'other',
+        options: CATEGORY_OPTIONS as unknown as { value: string; label: string }[],
+      });
+      if (p.isCancel(categoryInput)) { p.cancel('Cancelled'); process.exit(0); }
+      category = categoryInput as string;
+
+      // Product link (optional)
+      const linkTypeInput = await p.select({
+        message: 'Product link (optional):',
+        initialValue: existing?.productUrlType || 'none',
+        options: [
+          { value: 'none', label: 'No link' },
+          { value: 'git',  label: 'Git Repository' },
+          { value: 'url',  label: 'Website / URL' },
+        ] as { value: string; label: string }[],
+      });
+      if (p.isCancel(linkTypeInput)) { p.cancel('Cancelled'); process.exit(0); }
+
+      if (linkTypeInput !== 'none') {
+        productUrlType = linkTypeInput as string;
+        const productUrlInput = await p.text({
+          message: 'Product URL:',
+          placeholder: linkTypeInput === 'git'
+            ? `https://github.com/${auth.username}/${slug}`
+            : 'https://...',
+          defaultValue: existing?.productUrl || '',
+          validate: (v) => {
+            if (!v.trim()) return 'URL is required when link type is selected.';
+            try { new URL(v); } catch { return 'Invalid URL format.'; }
+          },
+        });
+        if (p.isCancel(productUrlInput)) { p.cancel('Cancelled'); process.exit(0); }
+        productUrl = productUrlInput as string;
+      }
     }
   }
 
