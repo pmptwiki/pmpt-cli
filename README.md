@@ -112,6 +112,7 @@ The generated prompt is **automatically copied to your clipboard**. Just paste i
 |---------|-------------|
 | `pmpt login` | Authenticate via GitHub (one-time) |
 | `pmpt publish` | Publish your project (requires quality score ≥ 40) |
+| `pmpt update` | Quick re-publish: update content without changing metadata |
 | `pmpt edit` | Edit published project metadata (description, tags, category) |
 | `pmpt unpublish` | Remove a published project from pmptwiki |
 | `pmpt clone <slug>` | Clone and reproduce someone's project |
