@@ -1,7 +1,7 @@
 import * as p from '@clack/prompts';
 import { resolve } from 'path';
 import { existsSync, readFileSync } from 'fs';
-import { isInitialized } from '../lib/config.js';
+import { isInitialized, loadConfig } from '../lib/config.js';
 import { copyToClipboard } from '../lib/clipboard.js';
 import { cmdWatch } from './watch.js';
 import {
@@ -181,9 +181,10 @@ export async function cmdPlan(path?: string, options?: PlanOptions): Promise<voi
       process.exit(1);
     }
 
+    const config = loadConfig(projectPath);
     const s = p.spinner();
     s.start('Generating documents from answers file...');
-    const { planPath, promptPath } = savePlanDocuments(projectPath, answers);
+    const { planPath, promptPath } = savePlanDocuments(projectPath, answers, config?.origin);
     progress.completed = true;
     progress.answers = answers;
     savePlanProgress(projectPath, progress);
@@ -230,10 +231,11 @@ export async function cmdPlan(path?: string, options?: PlanOptions): Promise<voi
   }
 
   // Generate documents
+  const config = loadConfig(projectPath);
   const s = p.spinner();
   s.start('Generating your AI prompt...');
 
-  const { planPath, promptPath } = savePlanDocuments(projectPath, answers);
+  const { planPath, promptPath } = savePlanDocuments(projectPath, answers, config?.origin);
 
   // Update progress
   progress.completed = true;

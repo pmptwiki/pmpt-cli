@@ -60,7 +60,7 @@ export const PLAN_QUESTIONS: PlanQuestion[] = [
 ];
 
 // Generate AI instruction file (pmpt.ai.md) — always English, AI-facing
-export function generateAIPrompt(answers: Record<string, string>): string {
+export function generateAIPrompt(answers: Record<string, string>, origin?: 'new' | 'adopted'): string {
   // Parse features (support comma, semicolon, or newline separators)
   const features = answers.coreFeatures
     .split(/[,;\n]/)
@@ -77,10 +77,30 @@ export function generateAIPrompt(answers: Record<string, string>): string {
     ? `\n## Tech Stack Preferences\n${answers.techStack}\n`
     : '';
 
+  const isAdopted = origin === 'adopted';
+
+  const workflowSteps = isAdopted
+    ? `This is an **existing project** — you are joining mid-development.
+
+1. First, explore the existing codebase and understand the current architecture.
+2. Review what's already implemented vs what still needs to be done.
+3. Suggest improvements or next steps based on the current state.
+4. Continue development from where it left off.
+
+Do NOT start from scratch. Build on the existing code.`
+    : `Please help me build this product based on the requirements above.
+
+1. First, review the requirements and ask if anything is unclear.
+2. Propose a technical architecture.
+3. Outline the implementation steps.
+4. Start coding from the first step.
+
+I'll confirm progress at each step before moving to the next.`;
+
   return `<!-- This file is for AI tools only. Do not edit manually. -->
 <!-- Paste this into Claude Code, Codex, Cursor, or any AI coding tool. -->
 
-# ${answers.projectName} — Product Development Request
+# ${answers.projectName} — ${isAdopted ? 'Continue Development' : 'Product Development Request'}
 
 ## What I Want to Build
 ${answers.productIdea}
@@ -90,14 +110,7 @@ ${features}
 ${techSection}
 ---
 
-Please help me build this product based on the requirements above.
-
-1. First, review the requirements and ask if anything is unclear.
-2. Propose a technical architecture.
-3. Outline the implementation steps.
-4. Start coding from the first step.
-
-I'll confirm progress at each step before moving to the next.
+${workflowSteps}
 
 ## Documentation Rule
 
@@ -224,7 +237,8 @@ export interface SavePlanResult {
 
 export function savePlanDocuments(
   projectPath: string,
-  answers: Record<string, string>
+  answers: Record<string, string>,
+  origin?: 'new' | 'adopted',
 ): SavePlanResult {
   const pmptDir = getPmptDir(projectPath);
   mkdirSync(pmptDir, { recursive: true });
@@ -241,7 +255,7 @@ export function savePlanDocuments(
 
   // Save AI instruction file
   const promptPath = join(pmptDir, 'pmpt.ai.md');
-  const promptContent = generateAIPrompt(answers);
+  const promptContent = generateAIPrompt(answers, origin);
   writeFileSync(promptPath, promptContent, 'utf-8');
 
   // Create initial snapshot

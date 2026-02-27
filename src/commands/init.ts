@@ -211,7 +211,7 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
         s2.start('Scanning project and generating plan...');
 
         const answers = scanResultToAnswers(scanResult, userDesc as string);
-        const { planPath, promptPath } = savePlanDocuments(projectPath, answers);
+        const { planPath, promptPath } = savePlanDocuments(projectPath, answers, origin);
 
         const progress = initPlanProgress(projectPath);
         progress.completed = true;
