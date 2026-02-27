@@ -40,6 +40,7 @@ import { cmdExport } from './commands/export.js';
 import { cmdImport } from './commands/import.js';
 import { cmdLogin } from './commands/login.js';
 import { cmdPublish } from './commands/publish.js';
+import { cmdUpdate } from './commands/update.js';
 import { cmdEdit } from './commands/edit.js';
 import { cmdUnpublish } from './commands/unpublish.js';
 import { cmdClone } from './commands/clone.js';
@@ -72,6 +73,7 @@ Examples:
   $ pmpt import <file.pmpt>      Import from .pmpt file
   $ pmpt login                   Authenticate with pmptwiki
   $ pmpt publish                 Publish project to pmptwiki
+  $ pmpt update                  Quick re-publish (content only)
   $ pmpt clone <slug>            Clone a project from pmptwiki
   $ pmpt explore                  Explore projects on pmptwiki.com
   $ pmpt recover                 Recover damaged pmpt.md via AI
@@ -165,6 +167,11 @@ program
   .option('--product-url-type <type>', 'Product link type: git or url')
   .option('--yes', 'Skip confirmation prompt')
   .action(cmdPublish);
+
+program
+  .command('update [path]')
+  .description('Quick re-publish: update content without changing metadata')
+  .action(cmdUpdate);
 
 program
   .command('edit')
