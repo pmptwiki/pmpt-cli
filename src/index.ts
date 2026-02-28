@@ -43,6 +43,7 @@ import { cmdPublish } from './commands/publish.js';
 import { cmdUpdate } from './commands/update.js';
 import { cmdEdit } from './commands/edit.js';
 import { cmdUnpublish } from './commands/unpublish.js';
+import { cmdGraduate } from './commands/graduate.js';
 import { cmdClone } from './commands/clone.js';
 import { cmdExplore } from './commands/browse.js';
 import { cmdRecover } from './commands/recover.js';
@@ -84,12 +85,14 @@ Examples:
   $ pmpt update                  Quick re-publish (content only)
   $ pmpt clone <slug>            Clone a project from pmptwiki
   $ pmpt explore (exp)           Explore projects on pmptwiki.com
+  $ pmpt graduate                Graduate a project (Hall of Fame)
   $ pmpt recover                 Recover damaged pmpt.md via AI
   $ pmpt mcp-setup                Configure MCP for AI tools
   $ pmpt feedback (fb)           Share ideas or report bugs
 
 Workflow:
   init → plan → save → publish   Basic publishing flow
+  publish → graduate             Graduate to Hall of Fame
   init → plan → watch            Continuous development
   login → publish → update       Re-publish with updates
 
@@ -203,6 +206,11 @@ program
   .command('unpublish')
   .description('Remove a published project from pmptwiki')
   .action(cmdUnpublish);
+
+program
+  .command('graduate')
+  .description('Graduate a project — archive it with a Hall of Fame badge')
+  .action(cmdGraduate);
 
 program
   .command('clone <slug>')

@@ -22,7 +22,7 @@ import { getPlanProgress, savePlanProgress, savePlanDocuments, PLAN_QUESTIONS } 
 import { isGitRepo } from './lib/git.js';
 import { diffSnapshots, type FileDiff } from './lib/diff.js';
 import { loadAuth } from './lib/auth.js';
-import { publishProject } from './lib/api.js';
+import { publishProject, graduateProject } from './lib/api.js';
 import { createPmptFile, type Version, type ProjectMeta, type PlanAnswers } from './lib/pmptFile.js';
 
 const require = createRequire(import.meta.url);
@@ -697,6 +697,41 @@ server.tool(
             `Download: ${result.downloadUrl}`,
             `Slug: ${slug}`,
             `Author: @${auth.username}`,
+          ].join('\n'),
+        }],
+      };
+    } catch (error) {
+      return { content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }], isError: true };
+    }
+  },
+);
+
+server.tool(
+  'pmpt_graduate',
+  'Graduate a project on pmptwiki — archives it with a Hall of Fame badge. The project can no longer be updated. Requires prior login via `pmpt login`.',
+  {
+    slug: z.string().describe('Project slug to graduate.'),
+    note: z.string().optional().describe('Graduation note (e.g., "Reached 1000 users!").'),
+  },
+  async ({ slug, note }) => {
+    try {
+      const auth = loadAuth();
+      if (!auth) {
+        return { content: [{ type: 'text' as const, text: 'Not logged in. Run `pmpt login` in the terminal first.' }], isError: true };
+      }
+
+      const result = await graduateProject(auth.token, slug, note);
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: [
+            `Project "${slug}" has graduated! 🎓`,
+            '',
+            `Graduated at: ${result.graduatedAt}`,
+            `Hall of Fame: https://pmptwiki.com/hall-of-fame`,
+            '',
+            'The project is now archived. No further updates are allowed.',
           ].join('\n'),
         }],
       };
