@@ -57,8 +57,9 @@ const { version } = require('../package.json');
 const program = new Command();
 
 // Track every command invocation (fire-and-forget)
-program.hook('preAction', (thisCommand) => {
-  trackCommand(thisCommand.name());
+program.hook('preAction', (thisCommand, actionCommand) => {
+  const commandName = actionCommand?.name() || thisCommand.name();
+  trackCommand(commandName);
 });
 
 program
