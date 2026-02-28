@@ -2,7 +2,7 @@
  * pmptwiki API client
  */
 
-const API_BASE = 'https://pmptwiki-api.sin2da.workers.dev';
+const API_BASE = 'https://pmptwiki-api.raunplaymore.workers.dev';
 const R2_PUBLIC_URL = 'https://pub-ce73b2410943490d80b60ddad9243d31.r2.dev';
 
 export interface PublishRequest {
@@ -150,6 +150,42 @@ export async function unpublishProject(token: string, slug: string): Promise<voi
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Unpublish failed' }));
+    throw new Error((err as { error: string }).error);
+  }
+}
+
+export interface GraduateResponse {
+  success: boolean;
+  slug: string;
+  graduatedAt: string;
+}
+
+export async function graduateProject(token: string, slug: string, note?: string): Promise<GraduateResponse> {
+  const res = await fetch(`${API_BASE}/graduate/${slug}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ note }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Graduate failed' }));
+    throw new Error((err as { error: string }).error);
+  }
+
+  return res.json() as Promise<GraduateResponse>;
+}
+
+export async function ungraduateProject(token: string, slug: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/graduate/${slug}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Ungraduate failed' }));
     throw new Error((err as { error: string }).error);
   }
 }
