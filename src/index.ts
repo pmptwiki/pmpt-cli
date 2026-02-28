@@ -48,12 +48,18 @@ import { cmdExplore } from './commands/browse.js';
 import { cmdRecover } from './commands/recover.js';
 import { cmdDiff } from './commands/diff.js';
 import { cmdInternalSeed } from './commands/internal-seed.js';
+import { trackCommand } from './lib/api.js';
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
 const { version } = require('../package.json');
 
 const program = new Command();
+
+// Track every command invocation (fire-and-forget)
+program.hook('preAction', (thisCommand) => {
+  trackCommand(thisCommand.name());
+});
 
 program
   .name('pmpt')
@@ -65,18 +71,23 @@ Examples:
   $ pmpt plan                    Start product planning (5 questions → AI prompt)
   $ pmpt save                    Save snapshot of docs folder
   $ pmpt watch                   Auto-detect file changes
-  $ pmpt history                 View version history
+  $ pmpt history (hist)          View version history
   $ pmpt diff v1 v2              Compare two versions
   $ pmpt diff v3                 Compare v3 to working copy
   $ pmpt squash v2 v5            Merge versions v2-v5 into v2
   $ pmpt export                  Export as .pmpt file (single JSON)
   $ pmpt import <file.pmpt>      Import from .pmpt file
   $ pmpt login                   Authenticate with pmptwiki
-  $ pmpt publish                 Publish project to pmptwiki
+  $ pmpt publish (pub)           Publish project to pmptwiki
   $ pmpt update                  Quick re-publish (content only)
   $ pmpt clone <slug>            Clone a project from pmptwiki
-  $ pmpt explore                  Explore projects on pmptwiki.com
+  $ pmpt explore (exp)           Explore projects on pmptwiki.com
   $ pmpt recover                 Recover damaged pmpt.md via AI
+
+Workflow:
+  init → plan → save → publish   Basic publishing flow
+  init → plan → watch            Continuous development
+  login → publish → update       Re-publish with updates
 
 Documentation: https://pmptwiki.com
 `);
@@ -100,11 +111,13 @@ program
 
 program
   .command('status [path]')
+  .alias('st')
   .description('Check project status and tracked files')
   .action(cmdStatus);
 
 program
   .command('history [path]')
+  .alias('hist')
   .description('View saved version history')
   .option('-c, --compact', 'Show compact history (hide small changes)')
   .action(cmdHistory);
@@ -143,9 +156,12 @@ program
   .command('logout')
   .description('Clear saved GitHub authentication')
   .action(async () => {
+    const prompts = await import('@clack/prompts');
     const { clearAuth } = await import('./lib/auth.js');
+    prompts.intro('pmpt logout');
     clearAuth();
-    console.log('Logged out successfully');
+    prompts.log.success('Logged out successfully.');
+    prompts.outro('');
   });
 
 // Platform commands
@@ -156,6 +172,7 @@ program
 
 program
   .command('publish [path]')
+  .alias('pub')
   .description('Publish project to pmptwiki platform')
   .option('--non-interactive', 'Run without interactive prompts')
   .option('--meta-file <file>', 'JSON file with slug, description, tags, category')
@@ -190,6 +207,7 @@ program
 
 program
   .command('explore')
+  .alias('exp')
   .description('Open pmptwiki.com to explore and search projects')
   .action(cmdExplore);
 
@@ -203,5 +221,67 @@ program
   .command('internal-seed', { hidden: true })
   .requiredOption('--spec <file>', 'Seed spec JSON file')
   .action(cmdInternalSeed);
+
+// "Did you mean?" helper
+function levenshtein(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
+    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
+  );
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+
+function suggestCommand(unknown: string): void {
+  const available = program.commands
+    .filter(cmd => !(cmd as unknown as Record<string, boolean>)._hidden)
+    .flatMap(cmd => [cmd.name(), ...(cmd.aliases?.() ?? [])]);
+
+  let bestMatch = '';
+  let bestDist = Infinity;
+  for (const name of available) {
+    const dist = levenshtein(unknown, name);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestMatch = name;
+    }
+  }
+
+  console.error(`\n  Unknown command: ${unknown}\n`);
+  if (bestDist <= 3 && bestMatch) {
+    console.error(`  Did you mean \x1b[36mpmpt ${bestMatch}\x1b[0m?\n`);
+  }
+  console.error(`  Run \x1b[36mpmpt --help\x1b[0m to see all commands.\n`);
+  process.exit(1);
+}
+
+// Handle unknown subcommands and Quick Start
+program.on('command:*', (operands: string[]) => {
+  suggestCommand(operands[0]);
+});
+
+// Show Quick Start when no arguments provided
+const args = process.argv.slice(2);
+if (args.length === 0) {
+  console.log(`
+  pmpt v${version} — Record and share your AI-driven product development journey
+
+  Quick Start:
+    $ pmpt init          1. Initialize project
+    $ pmpt plan          2. Generate AI prompt (copied to clipboard)
+    $ pmpt save          3. Save snapshot after progress
+    $ pmpt publish       4. Share on pmptwiki.com
+
+  Run \x1b[36mpmpt --help\x1b[0m for all commands.
+  Documentation: https://pmptwiki.com
+`);
+  process.exit(0);
+}
 
 program.parse();

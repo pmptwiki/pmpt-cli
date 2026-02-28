@@ -33,11 +33,14 @@ export async function cmdSquash(from: string, to: string, path?: string): Promis
     process.exit(1);
   }
 
+  const versionList = snapshots.map(s => `v${s.version}`).join(', ');
+
   // Find snapshots to squash
   const toSquash = snapshots.filter(s => s.version >= fromVersion && s.version <= toVersion);
 
   if (toSquash.length < 2) {
     p.log.error(`Need at least 2 versions to squash. Found ${toSquash.length} in range v${fromVersion}-v${toVersion}.`);
+    p.log.info(`Available versions: ${versionList}`);
     process.exit(1);
   }
 

@@ -175,3 +175,15 @@ export function trackClone(slug: string): void {
     body: JSON.stringify({ slug }),
   }).catch(() => {});
 }
+
+/**
+ * Fire-and-forget CLI command usage tracking.
+ * Never throws — failures are silently ignored.
+ */
+export function trackCommand(command: string): void {
+  fetch(`${API_BASE}/metrics/command`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ command }),
+  }).catch(() => {});
+}

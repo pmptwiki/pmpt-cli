@@ -139,9 +139,11 @@ export function cmdDiff(
     process.exit(1);
   }
 
+  const versionList = snapshots.map(s => `v${s.version}`).join(', ');
+
   const fromIndex = snapshots.findIndex(s => s.version === fromVersion);
   if (fromIndex === -1) {
-    p.log.error(`Version v${fromVersion} not found.`);
+    p.log.error(`Version v${fromVersion} not found. Available: ${versionList}`);
     process.exit(1);
   }
 
@@ -149,7 +151,7 @@ export function cmdDiff(
   if (!diffAgainstWorking) {
     toIndex = snapshots.findIndex(s => s.version === toVersion);
     if (toIndex === -1) {
-      p.log.error(`Version v${toVersion} not found.`);
+      p.log.error(`Version v${toVersion} not found. Available: ${versionList}`);
       process.exit(1);
     }
   }
