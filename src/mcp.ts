@@ -11,16 +11,19 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { resolve, join } from 'path';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import glob from 'fast-glob';
 import { createRequire } from 'module';
 
-import { isInitialized, loadConfig, getDocsDir } from './lib/config.js';
+import { isInitialized, loadConfig, getDocsDir, getConfigDir } from './lib/config.js';
 import { createFullSnapshot, getAllSnapshots, getTrackedFiles, resolveFullSnapshot } from './lib/history.js';
 import { computeQuality, type QualityInput } from './lib/quality.js';
-import { getPlanProgress } from './lib/plan.js';
+import { getPlanProgress, savePlanProgress, savePlanDocuments, PLAN_QUESTIONS } from './lib/plan.js';
 import { isGitRepo } from './lib/git.js';
 import { diffSnapshots, type FileDiff } from './lib/diff.js';
+import { loadAuth } from './lib/auth.js';
+import { publishProject } from './lib/api.js';
+import { createPmptFile, type Version, type ProjectMeta, type PlanAnswers } from './lib/pmptFile.js';
 
 const require = createRequire(import.meta.url);
 const { version } = require('../package.json');
@@ -279,6 +282,424 @@ server.tool(
       }
 
       return { content: [{ type: 'text' as const, text: lines.join('\n') }] };
+    } catch (error) {
+      return { content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }], isError: true };
+    }
+  },
+);
+
+server.tool(
+  'pmpt_plan_questions',
+  'Get the planning questions to ask the user. Call this FIRST when a user wants to build something, then ask each question conversationally. After collecting all answers, call pmpt_plan to generate the project.',
+  { projectPath: z.string().optional().describe('Project root path. Defaults to cwd.') },
+  async ({ projectPath }) => {
+    try {
+      const pp = resolveProjectPath(projectPath);
+      assertInitialized(pp);
+
+      const existing = getPlanProgress(pp);
+
+      const lines = [
+        'Ask the user these questions one by one in a natural, conversational way.',
+        'You may skip questions the user has already answered in the conversation.',
+        'Required questions are marked with *.',
+        '',
+      ];
+
+      for (const q of PLAN_QUESTIONS) {
+        lines.push(`${q.required ? '*' : ' '} ${q.key}: ${q.question}`);
+        if (q.placeholder) lines.push(`    hint: ${q.placeholder}`);
+      }
+
+      if (existing?.completed && existing.answers) {
+        lines.push('');
+        lines.push('NOTE: A plan already exists. Current answers:');
+        for (const q of PLAN_QUESTIONS) {
+          const val = existing.answers[q.key];
+          if (val) lines.push(`  ${q.key}: ${val}`);
+        }
+        lines.push('Ask if the user wants to update or start fresh.');
+      }
+
+      lines.push('');
+      lines.push('After collecting answers, call pmpt_plan with the collected answers.');
+
+      return { content: [{ type: 'text' as const, text: lines.join('\n') }] };
+    } catch (error) {
+      return { content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }], isError: true };
+    }
+  },
+);
+
+server.tool(
+  'pmpt_plan',
+  'Finalize the plan: submit collected answers to generate AI prompt and project docs (plan.md, pmpt.md, pmpt.ai.md). Call pmpt_plan_questions first to get the questions, ask the user conversationally, then call this with the answers.',
+  {
+    projectPath: z.string().optional().describe('Project root path. Defaults to cwd.'),
+    projectName: z.string().describe('Project name (e.g. "my-awesome-app").'),
+    productIdea: z.string().describe('What to build with AI — the core product idea.'),
+    coreFeatures: z.string().describe('Key features, separated by commas or semicolons.'),
+    additionalContext: z.string().optional().describe('Any extra context AI should know.'),
+    techStack: z.string().optional().describe('Preferred tech stack. AI will suggest if omitted.'),
+  },
+  async ({ projectPath, projectName, productIdea, coreFeatures, additionalContext, techStack }) => {
+    try {
+      const pp = resolveProjectPath(projectPath);
+      assertInitialized(pp);
+
+      const answers: Record<string, string> = {
+        projectName,
+        productIdea,
+        coreFeatures,
+        additionalContext: additionalContext || '',
+        techStack: techStack || '',
+      };
+
+      // Save plan progress
+      savePlanProgress(pp, {
+        completed: true,
+        startedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        answers,
+      });
+
+      // Generate and save plan documents (plan.md, pmpt.md, pmpt.ai.md) + initial snapshot
+      const result = savePlanDocuments(pp, answers);
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: [
+            `Plan completed for "${projectName}"!`,
+            '',
+            `Generated files:`,
+            `  - ${result.planPath} (project plan)`,
+            `  - ${result.promptPath} (AI instruction — paste into AI tool)`,
+            '',
+            `Questions answered:`,
+            ...PLAN_QUESTIONS.map(q => `  ${q.key}: ${answers[q.key] || '(skipped)'}`),
+            '',
+            `The AI prompt in pmpt.ai.md contains your development instructions.`,
+            `You can now start building based on the plan. Run pmpt_save after milestones.`,
+          ].join('\n'),
+        }],
+      };
+    } catch (error) {
+      return { content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }], isError: true };
+    }
+  },
+);
+
+server.tool(
+  'pmpt_read_context',
+  'Read project context to understand current state. Call this at the START of a new session to resume where you left off. Returns plan answers, docs content, recent history, and quality score.',
+  {
+    projectPath: z.string().optional().describe('Project root path. Defaults to cwd.'),
+    includeDocsContent: z.boolean().optional().describe('Include full content of docs files. Defaults to true.'),
+  },
+  async ({ projectPath, includeDocsContent }) => {
+    try {
+      const pp = resolveProjectPath(projectPath);
+      assertInitialized(pp);
+
+      const config = loadConfig(pp);
+      const planProgress = getPlanProgress(pp);
+      const tracked = getTrackedFiles(pp);
+      const snapshots = getAllSnapshots(pp);
+      const quality = computeQuality(buildQualityInput(pp));
+      const docsDir = getDocsDir(pp);
+
+      const lines: string[] = [];
+
+      // Project overview
+      const projectName = planProgress?.answers?.projectName || config?.lastPublishedSlug || '(unknown)';
+      lines.push(`# Project: ${projectName}`);
+      lines.push(`Quality: ${quality.score}/100 (${quality.grade}) | Snapshots: ${snapshots.length} | Files: ${tracked.length}`);
+      if (config?.lastPublished) lines.push(`Last published: ${config.lastPublished.slice(0, 10)}`);
+      lines.push('');
+
+      // Plan answers
+      if (planProgress?.completed && planProgress.answers) {
+        lines.push('## Plan');
+        for (const q of PLAN_QUESTIONS) {
+          const val = planProgress.answers[q.key];
+          if (val) lines.push(`${q.key}: ${val}`);
+        }
+        lines.push('');
+      }
+
+      // Docs content
+      if (includeDocsContent !== false) {
+        lines.push('## Docs');
+        for (const file of tracked) {
+          const filePath = join(docsDir, file);
+          if (existsSync(filePath)) {
+            const content = readFileSync(filePath, 'utf-8');
+            lines.push(`### ${file}`);
+            lines.push(content);
+            lines.push('');
+          }
+        }
+      }
+
+      // Recent history (last 5)
+      if (snapshots.length > 0) {
+        lines.push('## Recent History');
+        const recent = snapshots.slice(-5);
+        for (const s of recent) {
+          const changed = s.changedFiles?.length ?? s.files.length;
+          const git = s.git ? ` [${s.git.commit}]` : '';
+          lines.push(`v${s.version} — ${s.timestamp.slice(0, 16)} — ${changed} changed${git}`);
+        }
+        lines.push('');
+      }
+
+      // Quality details
+      const failing = quality.details.filter(d => d.score < d.maxScore);
+      if (failing.length > 0) {
+        lines.push('## Improvement Areas');
+        for (const d of failing) {
+          lines.push(`- ${d.label}: ${d.score}/${d.maxScore}${d.tip ? ` — ${d.tip}` : ''}`);
+        }
+      }
+
+      return { content: [{ type: 'text' as const, text: lines.join('\n') }] };
+    } catch (error) {
+      return { content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }], isError: true };
+    }
+  },
+);
+
+server.tool(
+  'pmpt_update_doc',
+  'Update pmpt.md: check off completed features, add progress notes, or append content. Use this after completing work to keep the project document up to date.',
+  {
+    projectPath: z.string().optional().describe('Project root path. Defaults to cwd.'),
+    completedFeatures: z.array(z.string()).optional().describe('Feature names to mark as done (matches against checkbox items in pmpt.md).'),
+    progressNote: z.string().optional().describe('Progress note to append to the Snapshot Log section.'),
+    snapshotVersion: z.string().optional().describe('Version label for the snapshot log entry (e.g. "v3 - Auth Complete"). Auto-generated if omitted.'),
+  },
+  async ({ projectPath, completedFeatures, progressNote, snapshotVersion }) => {
+    try {
+      const pp = resolveProjectPath(projectPath);
+      assertInitialized(pp);
+
+      const docsDir = getDocsDir(pp);
+      const pmptMdPath = join(docsDir, 'pmpt.md');
+
+      if (!existsSync(pmptMdPath)) {
+        return { content: [{ type: 'text' as const, text: 'pmpt.md not found. Run pmpt_plan first to generate project docs.' }], isError: true };
+      }
+
+      let content = readFileSync(pmptMdPath, 'utf-8');
+      const changes: string[] = [];
+
+      // Check off completed features
+      if (completedFeatures && completedFeatures.length > 0) {
+        for (const feature of completedFeatures) {
+          const pattern = new RegExp(`- \\[ \\] (.*${feature.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}.*)`,'i');
+          const match = content.match(pattern);
+          if (match) {
+            content = content.replace(match[0], `- [x] ${match[1]}`);
+            changes.push(`Checked: ${match[1]}`);
+          }
+        }
+      }
+
+      // Add progress note to Snapshot Log
+      if (progressNote) {
+        const snapshots = getAllSnapshots(pp);
+        const label = snapshotVersion || `v${snapshots.length} - Progress`;
+        const entry = `\n### ${label}\n- ${progressNote}\n`;
+
+        const logIndex = content.indexOf('## Snapshot Log');
+        if (logIndex !== -1) {
+          // Find the end of the Snapshot Log header line
+          const afterHeader = content.indexOf('\n', logIndex);
+          // Find the next ## section or end of file
+          const nextSection = content.indexOf('\n## ', afterHeader + 1);
+          const insertPos = nextSection !== -1 ? nextSection : content.length;
+          content = content.slice(0, insertPos) + entry + content.slice(insertPos);
+        } else {
+          content += `\n## Snapshot Log${entry}`;
+        }
+        changes.push(`Added log: ${label}`);
+      }
+
+      if (changes.length === 0) {
+        return { content: [{ type: 'text' as const, text: 'No changes to make. Provide completedFeatures or progressNote.' }] };
+      }
+
+      writeFileSync(pmptMdPath, content, 'utf-8');
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: [`Updated pmpt.md:`, ...changes.map(c => `  - ${c}`), '', 'Run pmpt_save to create a snapshot.'].join('\n'),
+        }],
+      };
+    } catch (error) {
+      return { content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }], isError: true };
+    }
+  },
+);
+
+server.tool(
+  'pmpt_log_decision',
+  'Record an architectural or technical decision in pmpt.md. Use this when making important choices (tech stack, library selection, design patterns, etc.) so the reasoning is preserved.',
+  {
+    projectPath: z.string().optional().describe('Project root path. Defaults to cwd.'),
+    title: z.string().describe('Short decision title (e.g. "Database: SQLite over PostgreSQL").'),
+    reasoning: z.string().describe('Why this decision was made.'),
+  },
+  async ({ projectPath, title, reasoning }) => {
+    try {
+      const pp = resolveProjectPath(projectPath);
+      assertInitialized(pp);
+
+      const docsDir = getDocsDir(pp);
+      const pmptMdPath = join(docsDir, 'pmpt.md');
+
+      if (!existsSync(pmptMdPath)) {
+        return { content: [{ type: 'text' as const, text: 'pmpt.md not found. Run pmpt_plan first.' }], isError: true };
+      }
+
+      let content = readFileSync(pmptMdPath, 'utf-8');
+      const date = new Date().toISOString().slice(0, 10);
+      const entry = `- **${title}** — ${reasoning} _(${date})_\n`;
+
+      const decisionsIndex = content.indexOf('## Decisions');
+      if (decisionsIndex !== -1) {
+        const afterHeader = content.indexOf('\n', decisionsIndex);
+        const nextSection = content.indexOf('\n## ', afterHeader + 1);
+        const insertPos = nextSection !== -1 ? nextSection : content.length;
+        content = content.slice(0, insertPos) + entry + content.slice(insertPos);
+      } else {
+        // Insert before Snapshot Log if it exists, otherwise append
+        const logIndex = content.indexOf('## Snapshot Log');
+        if (logIndex !== -1) {
+          content = content.slice(0, logIndex) + `## Decisions\n${entry}\n` + content.slice(logIndex);
+        } else {
+          content += `\n## Decisions\n${entry}`;
+        }
+      }
+
+      writeFileSync(pmptMdPath, content, 'utf-8');
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: `Decision recorded: ${title}\nReasoning: ${reasoning}`,
+        }],
+      };
+    } catch (error) {
+      return { content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }], isError: true };
+    }
+  },
+);
+
+server.tool(
+  'pmpt_publish',
+  'Publish the project to pmptwiki.com. Requires prior login via `pmpt login` in CLI. Packages project docs and history into a .pmpt file and uploads it.',
+  {
+    projectPath: z.string().optional().describe('Project root path. Defaults to cwd.'),
+    slug: z.string().describe('Project slug (3-50 chars, lowercase alphanumeric and hyphens).'),
+    description: z.string().optional().describe('Project description (max 500 chars).'),
+    tags: z.array(z.string()).optional().describe('Tags for the project (max 10).'),
+    category: z.string().optional().describe('Category: web-app, mobile-app, cli-tool, api-backend, ai-ml, game, library, other.'),
+    productUrl: z.string().optional().describe('Product URL (GitHub repo or live site).'),
+    productUrlType: z.enum(['git', 'url']).optional().describe('Type of product URL.'),
+  },
+  async ({ projectPath, slug, description, tags, category, productUrl, productUrlType }) => {
+    try {
+      const pp = resolveProjectPath(projectPath);
+      assertInitialized(pp);
+
+      // Check auth
+      const auth = loadAuth();
+      if (!auth) {
+        return { content: [{ type: 'text' as const, text: 'Not logged in. Run `pmpt login` in the terminal first.' }], isError: true };
+      }
+
+      // Build .pmpt file content
+      const config = loadConfig(pp);
+      const planProgress = getPlanProgress(pp);
+      const snapshots = getAllSnapshots(pp);
+      const docsDir = getDocsDir(pp);
+      const quality = computeQuality(buildQualityInput(pp));
+
+      if (quality.score < 40) {
+        return {
+          content: [{
+            type: 'text' as const,
+            text: `Quality score ${quality.score}/100 is below minimum (40). Improve your project before publishing.\n\n${quality.details.filter(d => d.score < d.maxScore).map(d => `- ${d.label}: ${d.tip}`).join('\n')}`,
+          }],
+          isError: true,
+        };
+      }
+
+      const projectName = planProgress?.answers?.projectName || config?.lastPublishedSlug || slug;
+
+      // Build versions
+      const history: Version[] = snapshots.map((s, i) => {
+        const files = resolveFullSnapshot(snapshots, i);
+        return {
+          version: s.version,
+          timestamp: s.timestamp,
+          files,
+          changedFiles: s.changedFiles,
+          note: s.note,
+          git: s.git,
+        };
+      });
+
+      // Build docs
+      const docs: Record<string, string> = {};
+      const tracked = getTrackedFiles(pp);
+      for (const file of tracked) {
+        const filePath = join(docsDir, file);
+        if (existsSync(filePath)) {
+          docs[file] = readFileSync(filePath, 'utf-8');
+        }
+      }
+
+      const meta: ProjectMeta = {
+        projectName,
+        createdAt: snapshots[0]?.timestamp || new Date().toISOString(),
+        exportedAt: new Date().toISOString(),
+        description: description || '',
+      };
+
+      const planAnswers: PlanAnswers | undefined = planProgress?.answers
+        ? planProgress.answers as unknown as PlanAnswers
+        : undefined;
+
+      const pmptContent = createPmptFile(meta, planAnswers, docs, history);
+
+      // Publish
+      const result = await publishProject(auth.token, {
+        slug,
+        pmptContent,
+        description: description || '',
+        tags: tags || [],
+        category,
+        productUrl,
+        productUrlType,
+      });
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: [
+            `Published "${projectName}" to pmptwiki!`,
+            '',
+            `URL: ${result.url}`,
+            `Download: ${result.downloadUrl}`,
+            `Slug: ${slug}`,
+            `Author: @${auth.username}`,
+          ].join('\n'),
+        }],
+      };
     } catch (error) {
       return { content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }], isError: true };
     }
