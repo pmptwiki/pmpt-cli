@@ -19,7 +19,7 @@ export async function cmdGraduate(): Promise<void> {
     const index = await fetchProjects();
     myProjects = index.projects
       .filter((proj) => proj.author === auth.username)
-      .filter((proj) => !(proj as Record<string, unknown>).graduated);
+      .filter((proj) => !proj.graduated);
   } catch (err) {
     s.stop('Failed to load projects');
     p.log.error(err instanceof Error ? err.message : 'Failed to fetch projects.');

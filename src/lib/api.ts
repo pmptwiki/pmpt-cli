@@ -36,6 +36,9 @@ export interface ProjectEntry {
   category?: string;
   productUrl?: string;
   productUrlType?: string;
+  graduated?: boolean;
+  graduatedAt?: string;
+  graduationNote?: string;
 }
 
 export interface ProjectIndex {
