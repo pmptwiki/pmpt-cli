@@ -136,6 +136,16 @@ pmpt includes a built-in [MCP](https://modelcontextprotocol.io) server so AI too
 npm install -g pmpt   # pmpt + pmpt-mcp both installed
 ```
 
+#### Automatic Setup (Recommended)
+
+```bash
+pmpt mcp-setup
+```
+
+Auto-detects the `pmpt-mcp` binary path, lets you choose your AI tool (Claude Code, Cursor, or `.mcp.json`), and writes the config. Solves PATH issues common with nvm.
+
+#### Manual Setup
+
 Add to your `.mcp.json` (or IDE MCP config):
 
 ```json
@@ -147,6 +157,8 @@ Add to your `.mcp.json` (or IDE MCP config):
   }
 }
 ```
+
+> **nvm users**: If your AI tool can't find `pmpt-mcp`, use `pmpt mcp-setup` or replace `"pmpt-mcp"` with the absolute path (run `which pmpt-mcp` to find it).
 
 ### Available Tools
 

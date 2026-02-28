@@ -48,6 +48,7 @@ import { cmdExplore } from './commands/browse.js';
 import { cmdRecover } from './commands/recover.js';
 import { cmdDiff } from './commands/diff.js';
 import { cmdInternalSeed } from './commands/internal-seed.js';
+import { cmdMcpSetup } from './commands/mcp-setup.js';
 import { trackCommand } from './lib/api.js';
 import { createRequire } from 'module';
 
@@ -84,6 +85,7 @@ Examples:
   $ pmpt clone <slug>            Clone a project from pmptwiki
   $ pmpt explore (exp)           Explore projects on pmptwiki.com
   $ pmpt recover                 Recover damaged pmpt.md via AI
+  $ pmpt mcp-setup                Configure MCP for AI tools
   $ pmpt feedback (fb)           Share ideas or report bugs
 
 Workflow:
@@ -217,6 +219,11 @@ program
   .command('recover [path]')
   .description('Generate a recovery prompt to regenerate pmpt.md via AI')
   .action(cmdRecover);
+
+program
+  .command('mcp-setup')
+  .description('Configure pmpt MCP server for AI tools (Claude Code, Cursor, etc.)')
+  .action(cmdMcpSetup);
 
 program
   .command('feedback')
