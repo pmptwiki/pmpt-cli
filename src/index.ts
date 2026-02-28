@@ -84,6 +84,7 @@ Examples:
   $ pmpt clone <slug>            Clone a project from pmptwiki
   $ pmpt explore (exp)           Explore projects on pmptwiki.com
   $ pmpt recover                 Recover damaged pmpt.md via AI
+  $ pmpt feedback (fb)           Share ideas or report bugs
 
 Workflow:
   init → plan → save → publish   Basic publishing flow
@@ -216,6 +217,45 @@ program
   .command('recover [path]')
   .description('Generate a recovery prompt to regenerate pmpt.md via AI')
   .action(cmdRecover);
+
+program
+  .command('feedback')
+  .alias('fb')
+  .description('Share ideas, request features, or report bugs')
+  .action(async () => {
+    const prompts = await import('@clack/prompts');
+    const { exec } = await import('child_process');
+    prompts.intro('pmpt feedback');
+
+    const type = await prompts.select({
+      message: 'What would you like to do?',
+      options: [
+        { value: 'idea', label: 'Suggest a feature or idea' },
+        { value: 'bug', label: 'Report a bug' },
+        { value: 'question', label: 'Ask a question' },
+        { value: 'browse', label: 'Browse existing discussions' },
+      ],
+    });
+
+    if (prompts.isCancel(type)) {
+      prompts.cancel('Cancelled');
+      process.exit(0);
+    }
+
+    const urls: Record<string, string> = {
+      idea: 'https://github.com/pmptwiki/pmpt-cli/discussions/categories/ideas',
+      bug: 'https://github.com/pmptwiki/pmpt-cli/issues/new',
+      question: 'https://github.com/pmptwiki/pmpt-cli/discussions/categories/q-a',
+      browse: 'https://github.com/pmptwiki/pmpt-cli/discussions',
+    };
+
+    const url = urls[type as string];
+    const openCmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
+    exec(`${openCmd} "${url}"`);
+
+    prompts.log.success(`Opening ${url}`);
+    prompts.outro('Thanks for your feedback!');
+  });
 
 // Internal automation command (hidden from help)
 program
