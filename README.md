@@ -130,6 +130,12 @@ pmpt includes a built-in [MCP](https://modelcontextprotocol.io) server so AI too
 
 ### Setup
 
+`pmpt-mcp` is included when you install pmpt — no separate installation needed.
+
+```bash
+npm install -g pmpt   # pmpt + pmpt-mcp both installed
+```
+
 Add to your `.mcp.json` (or IDE MCP config):
 
 ```json
