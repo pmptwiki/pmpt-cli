@@ -1,69 +1,12 @@
 import * as p from '@clack/prompts';
-import { resolve, join, dirname, sep } from 'path';
-import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, rmSync } from 'fs';
+import { resolve, join } from 'path';
+import { existsSync, readFileSync, writeFileSync, readdirSync, rmSync } from 'fs';
 import { isInitialized, getConfigDir, getHistoryDir, getDocsDir, initializeProject } from '../lib/config.js';
-import { validatePmptFile, isSafeFilename, SCHEMA_VERSION, type PmptFile } from '../lib/pmptFile.js';
+import { validatePmptFile } from '../lib/pmptFile.js';
+import { restoreHistory, restoreDocs } from './clone.js';
 
 interface ImportOptions {
   force?: boolean;
-}
-
-/**
- * Restore history from .pmpt file
- */
-function restoreHistory(historyDir: string, history: PmptFile['history']): void {
-  mkdirSync(historyDir, { recursive: true });
-
-  for (const version of history) {
-    const timestamp = version.timestamp.replace(/[:.]/g, '-').slice(0, 19);
-    const snapshotName = `v${version.version}-${timestamp}`;
-    const snapshotDir = join(historyDir, snapshotName);
-
-    mkdirSync(snapshotDir, { recursive: true });
-
-    // Write files (with path traversal protection)
-    for (const [filename, content] of Object.entries(version.files)) {
-      if (!isSafeFilename(filename)) continue;
-      const filePath = join(snapshotDir, filename);
-      if (!resolve(filePath).startsWith(resolve(snapshotDir) + sep)) continue;
-      const fileDir = dirname(filePath);
-
-      if (fileDir !== snapshotDir) {
-        mkdirSync(fileDir, { recursive: true });
-      }
-
-      writeFileSync(filePath, content, 'utf-8');
-    }
-
-    // Write metadata
-    const metaPath = join(snapshotDir, '.meta.json');
-    writeFileSync(metaPath, JSON.stringify({
-      version: version.version,
-      timestamp: version.timestamp,
-      files: Object.keys(version.files),
-      git: version.git,
-    }, null, 2), 'utf-8');
-  }
-}
-
-/**
- * Restore docs from .pmpt file
- */
-function restoreDocs(docsDir: string, docs: Record<string, string>): void {
-  mkdirSync(docsDir, { recursive: true });
-
-  for (const [filename, content] of Object.entries(docs)) {
-    if (!isSafeFilename(filename)) continue;
-    const filePath = join(docsDir, filename);
-    if (!resolve(filePath).startsWith(resolve(docsDir) + sep)) continue;
-    const fileDir = dirname(filePath);
-
-    if (fileDir !== docsDir) {
-      mkdirSync(fileDir, { recursive: true });
-    }
-
-    writeFileSync(filePath, content, 'utf-8');
-  }
 }
 
 export async function cmdImport(pmptFile: string, options?: ImportOptions): Promise<void> {

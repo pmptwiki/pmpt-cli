@@ -234,7 +234,7 @@ export function getAllSnapshots(projectPath: string): SnapshotEntry[] {
     if (!statSync(snapshotDir).isDirectory()) continue;
 
     const metaPath = join(snapshotDir, '.meta.json');
-    let meta: any = {};
+    let meta: Record<string, unknown> = {};
 
     if (existsSync(metaPath)) {
       try {
