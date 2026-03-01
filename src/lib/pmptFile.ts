@@ -49,6 +49,8 @@ const VersionSchema = z.object({
   version: z.number().min(1),
   timestamp: z.string(),
   summary: z.string().optional(),
+  note: z.string().optional(),
+  changedFiles: z.array(z.string()).optional(),
   files: z.record(safeFilenameKey, z.string()), // filename -> content
   git: GitInfoSchema,
 });

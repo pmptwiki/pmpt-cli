@@ -76,6 +76,8 @@ export async function cmdExport(path?: string, options?: ExportOptions): Promise
       version: snapshots[i].version,
       timestamp: snapshots[i].timestamp,
       files,
+      changedFiles: snapshots[i].changedFiles,
+      note: snapshots[i].note,
       git: snapshots[i].git,
     });
   }

@@ -115,6 +115,8 @@ export async function cmdUpdate(path?: string): Promise<void> {
     version: snapshot.version,
     timestamp: snapshot.timestamp,
     files: resolveFullSnapshot(snapshots, i),
+    changedFiles: snapshot.changedFiles,
+    note: snapshot.note,
     git: snapshot.git,
   }));
 
