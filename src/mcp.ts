@@ -108,7 +108,7 @@ function formatDiffs(diffs: FileDiff[]): string {
 
 server.tool(
   'pmpt_save',
-  'Save a snapshot of .pmpt/docs/ files. Call after completing features, fixes, or milestones. IMPORTANT: Always provide a summary describing what was accomplished — this gets recorded in the project development log.',
+  'Save a snapshot of .pmpt/docs/ files. Call after completing features, fixes, or milestones. CRITICAL: Always provide a summary parameter — it becomes the version description shown on pmptwiki.com. Without a summary, the version appears empty on the project page. Write a concise description of what was accomplished (e.g. "Added user authentication with JWT").',
   {
     projectPath: z.string().optional().describe('Project root path. Defaults to cwd.'),
     summary: z.string().optional().describe('What was accomplished since the last save. This is recorded in pmpt.md as a development log entry. Examples: "Implemented user auth with JWT", "Fixed responsive layout on mobile", "Added search filtering by category".'),
@@ -702,7 +702,7 @@ server.tool(
 
 server.tool(
   'pmpt_publish',
-  'Publish the project to pmptwiki.com. This tool handles everything non-interactively — just provide the slug and optional metadata. Note: the user must have run `pmpt login` once before (check if auth exists). If not logged in, ask the user to run `pmpt login` in their terminal, then retry this tool.',
+  'Publish the project to pmptwiki.com. Non-interactive — just provide slug and optional metadata. BEFORE publishing, verify: (1) Run pmpt_history to check all snapshots have meaningful summaries — empty versions look bad on the project page. (2) If any versions lack descriptions, run pmpt_save with a summary or update pmpt.md Snapshot Log section with ### vN — Title entries. (3) Run pmpt_quality to check publish readiness. Note: user must have run `pmpt login` once before.',
   {
     projectPath: z.string().optional().describe('Project root path. Defaults to cwd.'),
     slug: z.string().describe('Project slug (3-50 chars, lowercase alphanumeric and hyphens).'),
