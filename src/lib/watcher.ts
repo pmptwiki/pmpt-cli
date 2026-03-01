@@ -2,11 +2,11 @@ import chokidar from 'chokidar';
 import { loadConfig, getDocsDir } from './config.js';
 import { createFullSnapshot, type SnapshotEntry } from './history.js';
 import { readFileSync } from 'fs';
-import { join } from 'path';
+import { join, relative } from 'path';
 
 export function startWatching(
   projectPath: string,
-  onSnapshot?: (version: number, files: string[], git?: SnapshotEntry['git']) => void
+  onSnapshot?: (version: number, files: string[], git?: SnapshotEntry['git'], note?: string) => void
 ): chokidar.FSWatcher {
   const config = loadConfig(projectPath);
   if (!config) {
@@ -26,12 +26,20 @@ export function startWatching(
   });
 
   const fileContents = new Map<string, string>();
+  const pendingChanges = new Set<string>();
   let debounceTimer: NodeJS.Timeout | null = null;
 
   const saveSnapshot = () => {
-    const entry = createFullSnapshot(projectPath);
+    // Build auto-note from changed file names
+    const changedNames = [...pendingChanges].map(p => relative(docsDir, p));
+    const note = changedNames.length > 0
+      ? `Updated ${changedNames.join(', ')}`
+      : undefined;
+    pendingChanges.clear();
+
+    const entry = createFullSnapshot(projectPath, { note });
     if (onSnapshot) {
-      onSnapshot(entry.version, entry.files, entry.git);
+      onSnapshot(entry.version, entry.files, entry.git, note);
     }
   };
 
@@ -47,6 +55,7 @@ export function startWatching(
     try {
       const content = readFileSync(path, 'utf-8');
       fileContents.set(path, content);
+      pendingChanges.add(path);
       debouncedSave();
     } catch {
       // Ignore file read errors
@@ -61,6 +70,7 @@ export function startWatching(
       // Only snapshot if content actually changed
       if (oldContent !== newContent) {
         fileContents.set(path, newContent);
+        pendingChanges.add(path);
         debouncedSave();
       }
     } catch {

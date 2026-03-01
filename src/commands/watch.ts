@@ -19,13 +19,16 @@ export function cmdWatch(path?: string): void {
   p.log.info('Press Ctrl+C to stop.');
   p.log.message('');
 
-  const watcher = startWatching(projectPath, (version, files, git) => {
+  const watcher = startWatching(projectPath, (version, files, git, note) => {
     let msg = `v${version} saved (${files.length} file(s))`;
     if (git) {
       msg += ` · ${git.commit}`;
       if (git.dirty) msg += ' (uncommitted)';
     }
     p.log.success(msg);
+    if (note) {
+      p.log.info(`  ${note}`);
+    }
   });
 
   process.on('SIGINT', () => {

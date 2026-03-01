@@ -1,8 +1,8 @@
 import * as p from '@clack/prompts';
-import { resolve } from 'path';
-import { existsSync, statSync } from 'fs';
+import { resolve, join } from 'path';
+import { existsSync, statSync, readFileSync, writeFileSync } from 'fs';
 import { isInitialized, getDocsDir } from '../lib/config.js';
-import { createFullSnapshot, getTrackedFiles } from '../lib/history.js';
+import { createFullSnapshot, getTrackedFiles, getAllSnapshots } from '../lib/history.js';
 
 export async function cmdSave(fileOrPath?: string): Promise<void> {
   const projectPath = fileOrPath && existsSync(fileOrPath) && statSync(fileOrPath).isDirectory()
@@ -27,11 +27,53 @@ export async function cmdSave(fileOrPath?: string): Promise<void> {
     return;
   }
 
+  // Ask for summary
+  const summary = await p.text({
+    message: 'What did you accomplish? (this is shown on your project page)',
+    placeholder: 'e.g. Added user auth with JWT, built login/signup pages',
+  });
+
+  if (p.isCancel(summary)) {
+    p.cancel('Save cancelled.');
+    process.exit(0);
+  }
+
+  const note = (summary as string).trim() || undefined;
+
+  // Write summary to pmpt.md Snapshot Log before snapshot
+  if (note) {
+    const pmptMdPath = join(docsDir, 'pmpt.md');
+    if (existsSync(pmptMdPath)) {
+      let content = readFileSync(pmptMdPath, 'utf-8');
+      const snapshots = getAllSnapshots(projectPath);
+      const nextVersion = snapshots.length + 1;
+      const date = new Date().toISOString().slice(0, 10);
+
+      const noteLines = note.split(/(?:\.\s+|\n)/).filter(s => s.trim()).map(s => {
+        const trimmed = s.trim().replace(/\.?$/, '');
+        return `- ${trimmed}`;
+      });
+      const entry = `\n### v${nextVersion} — ${date}\n${noteLines.join('\n')}\n`;
+
+      const logIndex = content.indexOf('## Snapshot Log');
+      if (logIndex !== -1) {
+        const afterHeader = content.indexOf('\n', logIndex);
+        const nextSection = content.indexOf('\n## ', afterHeader + 1);
+        const insertPos = nextSection !== -1 ? nextSection : content.length;
+        content = content.slice(0, insertPos) + entry + content.slice(insertPos);
+      } else {
+        content += `\n## Snapshot Log${entry}`;
+      }
+
+      writeFileSync(pmptMdPath, content, 'utf-8');
+    }
+  }
+
   const s = p.spinner();
   s.start(`Creating snapshot of ${files.length} file(s)...`);
 
   try {
-    const entry = createFullSnapshot(projectPath);
+    const entry = createFullSnapshot(projectPath, { note });
     s.stop('Snapshot saved');
 
     let msg = `v${entry.version} saved`;
@@ -48,11 +90,8 @@ export async function cmdSave(fileOrPath?: string): Promise<void> {
 
     p.log.success(msg);
 
-    // Warn if pmpt.md was not updated since last save
-    if (entry.version > 1 && entry.changedFiles && !entry.changedFiles.includes('pmpt.md')) {
-      p.log.message('');
-      p.log.warn('pmpt.md has not been updated since the last save.');
-      p.log.message('  Tip: Mark completed features and update the Snapshot Log before saving.');
+    if (note) {
+      p.log.info(`Summary: ${note}`);
     }
 
     p.log.message('');
