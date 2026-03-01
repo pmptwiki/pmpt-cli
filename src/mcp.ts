@@ -108,10 +108,10 @@ function formatDiffs(diffs: FileDiff[]): string {
 
 server.tool(
   'pmpt_save',
-  'Save a snapshot of .pmpt/docs/ files. Call after completing features, fixes, or milestones. CRITICAL: Always provide a summary parameter — it becomes the version description shown on pmptwiki.com. Without a summary, the version appears empty on the project page. Write a concise description of what was accomplished (e.g. "Added user authentication with JWT").',
+  'Save a snapshot of .pmpt/docs/ files. Call after completing features, fixes, or milestones. CRITICAL: Always provide a detailed summary parameter — it becomes the version description shown publicly on pmptwiki.com. Without a summary, the version appears empty on the project page. Write a DETAILED summary (3-5 sentences) that explains: (1) WHAT was built or changed, (2) WHY it matters, (3) key technical decisions made. Think of it as a mini dev blog entry that helps others learn from your journey.',
   {
     projectPath: z.string().optional().describe('Project root path. Defaults to cwd.'),
-    summary: z.string().optional().describe('What was accomplished since the last save. This is recorded in pmpt.md as a development log entry. Examples: "Implemented user auth with JWT", "Fixed responsive layout on mobile", "Added search filtering by category".'),
+    summary: z.string().optional().describe('Detailed description of what was accomplished since the last save. Write 3-5 sentences that tell the story: what you built, why, and how. This is shown publicly on the project page. BAD example: "Added auth" — too vague. GOOD example: "Implemented user authentication using JWT with refresh token rotation. Chose JWT over session-based auth for stateless API compatibility. Added login/signup pages with form validation and error handling. Protected routes now redirect unauthenticated users to login."'),
   },
   async ({ projectPath, summary }) => {
     try {
@@ -133,7 +133,11 @@ server.tool(
           const snapshots = getAllSnapshots(pp);
           const nextVersion = snapshots.length + 1;
           const date = new Date().toISOString().slice(0, 10);
-          const entry = `\n### v${nextVersion} — ${date}\n- ${summary}\n`;
+          const summaryLines = summary.split(/(?:\.\s+|\n)/).filter(s => s.trim()).map(s => {
+            const trimmed = s.trim().replace(/\.?$/, '');
+            return `- ${trimmed}`;
+          });
+          const entry = `\n### v${nextVersion} — ${date}\n${summaryLines.join('\n')}\n`;
 
           const logIndex = content.indexOf('## Snapshot Log');
           if (logIndex !== -1) {
@@ -574,12 +578,12 @@ server.tool(
 
 server.tool(
   'pmpt_update_doc',
-  'Update pmpt.md: check off completed features, add progress notes, or backfill missing version summaries. Use after completing work OR before publishing to fill in empty Snapshot Log entries. To backfill: set snapshotVersion="v2 — Description" and progressNote="What was done in this version".',
+  'Update pmpt.md: check off completed features, add progress notes, or backfill missing version summaries. Use after completing work OR before publishing to fill in empty Snapshot Log entries. To backfill: use pmpt_diff to understand what changed, then set snapshotVersion="v2 — Short Title" and progressNote with DETAILED multi-sentence description. Write as if explaining to another developer what happened in this version and why.',
   {
     projectPath: z.string().optional().describe('Project root path. Defaults to cwd.'),
     completedFeatures: z.array(z.string()).optional().describe('Feature names to mark as done (matches against checkbox items in pmpt.md).'),
-    progressNote: z.string().optional().describe('Progress note to append to the Snapshot Log section.'),
-    snapshotVersion: z.string().optional().describe('Version label for the snapshot log entry (e.g. "v3 - Auth Complete"). Auto-generated if omitted.'),
+    progressNote: z.string().optional().describe('Detailed progress note (3-5 sentences) to append to the Snapshot Log. Explain what was done, why, and any key decisions. Each sentence becomes a bullet point. BAD: "Fixed bugs". GOOD: "Fixed authentication redirect loop caused by token expiry race condition. Added token refresh middleware that silently renews expired tokens. Users no longer get logged out unexpectedly during long sessions."'),
+    snapshotVersion: z.string().optional().describe('Version label for the snapshot log entry (e.g. "v3 — Auth Complete"). Auto-generated if omitted.'),
   },
   async ({ projectPath, completedFeatures, progressNote, snapshotVersion }) => {
     try {
@@ -612,7 +616,11 @@ server.tool(
       if (progressNote) {
         const snapshots = getAllSnapshots(pp);
         const label = snapshotVersion || `v${snapshots.length} - Progress`;
-        const entry = `\n### ${label}\n- ${progressNote}\n`;
+        const noteLines = progressNote.split(/(?:\.\s+|\n)/).filter(s => s.trim()).map(s => {
+          const trimmed = s.trim().replace(/\.?$/, '');
+          return `- ${trimmed}`;
+        });
+        const entry = `\n### ${label}\n${noteLines.join('\n')}\n`;
 
         const logIndex = content.indexOf('## Snapshot Log');
         if (logIndex !== -1) {
@@ -702,7 +710,7 @@ server.tool(
 
 server.tool(
   'pmpt_publish',
-  'Publish the project to pmptwiki.com. Non-interactive — just provide slug and optional metadata. MANDATORY pre-publish checklist: (1) Run pmpt_history — if ANY version lacks a note/summary, you MUST fix it before publishing. (2) For each empty version, run pmpt_diff for that version to understand changes, then use pmpt_update_doc with progressNote and snapshotVersion (e.g. snapshotVersion="v2 — Tech stack migration to Cloudflare") to add Snapshot Log entries to pmpt.md. (3) After backfilling all versions, run pmpt_save with a summary. (4) Run pmpt_quality to verify readiness. DO NOT publish with empty versions — they display poorly on the project page. Note: user must have run `pmpt login` once before.',
+  'Publish the project to pmptwiki.com. Non-interactive — just provide slug and optional metadata. MANDATORY pre-publish checklist: (1) Run pmpt_history — if ANY version lacks a note/summary, you MUST fix it before publishing. (2) For each empty version, run pmpt_diff for that version to understand what changed, then use pmpt_update_doc with a DETAILED progressNote (3-5 sentences explaining what, why, and key decisions) and snapshotVersion. Write like a dev blog — others will read this to learn from your journey. (3) After backfilling all versions, run pmpt_save with a detailed summary. (4) Run pmpt_quality to verify readiness. DO NOT publish with empty or vague single-line versions — they display poorly on the project page. Note: user must have run `pmpt login` once before.',
   {
     projectPath: z.string().optional().describe('Project root path. Defaults to cwd.'),
     slug: z.string().describe('Project slug (3-50 chars, lowercase alphanumeric and hyphens).'),
