@@ -702,7 +702,7 @@ server.tool(
 
 server.tool(
   'pmpt_publish',
-  'Publish the project to pmptwiki.com. Requires prior login via `pmpt login` in CLI. Packages project docs and history into a .pmpt file and uploads it.',
+  'Publish the project to pmptwiki.com. This tool handles everything non-interactively — just provide the slug and optional metadata. Note: the user must have run `pmpt login` once before (check if auth exists). If not logged in, ask the user to run `pmpt login` in their terminal, then retry this tool.',
   {
     projectPath: z.string().optional().describe('Project root path. Defaults to cwd.'),
     slug: z.string().describe('Project slug (3-50 chars, lowercase alphanumeric and hyphens).'),
@@ -810,7 +810,7 @@ server.tool(
 
 server.tool(
   'pmpt_graduate',
-  'Graduate a project on pmptwiki — archives it with a Hall of Fame badge. The project can no longer be updated. Requires prior login via `pmpt login`.',
+  'Graduate a project on pmptwiki — archives it with a Hall of Fame badge. The project can no longer be updated. Non-interactive. User must have run `pmpt login` once before.',
   {
     slug: z.string().describe('Project slug to graduate.'),
     note: z.string().optional().describe('Graduation note (e.g., "Reached 1000 users!").'),
