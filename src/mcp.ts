@@ -574,7 +574,7 @@ server.tool(
 
 server.tool(
   'pmpt_update_doc',
-  'Update pmpt.md: check off completed features, add progress notes, or append content. Use this after completing work to keep the project document up to date.',
+  'Update pmpt.md: check off completed features, add progress notes, or backfill missing version summaries. Use after completing work OR before publishing to fill in empty Snapshot Log entries. To backfill: set snapshotVersion="v2 — Description" and progressNote="What was done in this version".',
   {
     projectPath: z.string().optional().describe('Project root path. Defaults to cwd.'),
     completedFeatures: z.array(z.string()).optional().describe('Feature names to mark as done (matches against checkbox items in pmpt.md).'),
@@ -702,7 +702,7 @@ server.tool(
 
 server.tool(
   'pmpt_publish',
-  'Publish the project to pmptwiki.com. Non-interactive — just provide slug and optional metadata. BEFORE publishing, verify: (1) Run pmpt_history to check all snapshots have meaningful summaries — empty versions look bad on the project page. (2) If any versions lack descriptions, run pmpt_save with a summary or update pmpt.md Snapshot Log section with ### vN — Title entries. (3) Run pmpt_quality to check publish readiness. Note: user must have run `pmpt login` once before.',
+  'Publish the project to pmptwiki.com. Non-interactive — just provide slug and optional metadata. MANDATORY pre-publish checklist: (1) Run pmpt_history — if ANY version lacks a note/summary, you MUST fix it before publishing. (2) For each empty version, run pmpt_diff for that version to understand changes, then use pmpt_update_doc with progressNote and snapshotVersion (e.g. snapshotVersion="v2 — Tech stack migration to Cloudflare") to add Snapshot Log entries to pmpt.md. (3) After backfilling all versions, run pmpt_save with a summary. (4) Run pmpt_quality to verify readiness. DO NOT publish with empty versions — they display poorly on the project page. Note: user must have run `pmpt login` once before.',
   {
     projectPath: z.string().optional().describe('Project root path. Defaults to cwd.'),
     slug: z.string().describe('Project slug (3-50 chars, lowercase alphanumeric and hyphens).'),
