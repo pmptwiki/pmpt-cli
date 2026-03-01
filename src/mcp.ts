@@ -15,7 +15,7 @@ import { existsSync, readFileSync, writeFileSync } from 'fs';
 import glob from 'fast-glob';
 import { createRequire } from 'module';
 
-import { isInitialized, loadConfig, getDocsDir, getConfigDir } from './lib/config.js';
+import { isInitialized, loadConfig, getDocsDir, getConfigDir, getHistoryDir } from './lib/config.js';
 import { createFullSnapshot, getAllSnapshots, getTrackedFiles, resolveFullSnapshot } from './lib/history.js';
 import { computeQuality, type QualityInput } from './lib/quality.js';
 import { getPlanProgress, savePlanProgress, savePlanDocuments, PLAN_QUESTIONS } from './lib/plan.js';
@@ -108,9 +108,12 @@ function formatDiffs(diffs: FileDiff[]): string {
 
 server.tool(
   'pmpt_save',
-  'Save a snapshot of .pmpt/docs/ files. Call after completing features, fixes, or milestones.',
-  { projectPath: z.string().optional().describe('Project root path. Defaults to cwd.') },
-  async ({ projectPath }) => {
+  'Save a snapshot of .pmpt/docs/ files. Call after completing features, fixes, or milestones. IMPORTANT: Always provide a summary describing what was accomplished — this gets recorded in the project development log.',
+  {
+    projectPath: z.string().optional().describe('Project root path. Defaults to cwd.'),
+    summary: z.string().optional().describe('What was accomplished since the last save. This is recorded in pmpt.md as a development log entry. Examples: "Implemented user auth with JWT", "Fixed responsive layout on mobile", "Added search filtering by category".'),
+  },
+  async ({ projectPath, summary }) => {
     try {
       const pp = resolveProjectPath(projectPath);
       assertInitialized(pp);
@@ -120,7 +123,33 @@ server.tool(
         return { content: [{ type: 'text' as const, text: 'No files to save. Add .md files to .pmpt/docs/ first.' }] };
       }
 
-      const entry = createFullSnapshot(pp);
+      // Auto-update pmpt.md with summary before snapshot
+      if (summary) {
+        const docsDir = getDocsDir(pp);
+        const pmptMdPath = join(docsDir, 'pmpt.md');
+
+        if (existsSync(pmptMdPath)) {
+          let content = readFileSync(pmptMdPath, 'utf-8');
+          const snapshots = getAllSnapshots(pp);
+          const nextVersion = snapshots.length + 1;
+          const date = new Date().toISOString().slice(0, 10);
+          const entry = `\n### v${nextVersion} — ${date}\n- ${summary}\n`;
+
+          const logIndex = content.indexOf('## Snapshot Log');
+          if (logIndex !== -1) {
+            const afterHeader = content.indexOf('\n', logIndex);
+            const nextSection = content.indexOf('\n## ', afterHeader + 1);
+            const insertPos = nextSection !== -1 ? nextSection : content.length;
+            content = content.slice(0, insertPos) + entry + content.slice(insertPos);
+          } else {
+            content += `\n## Snapshot Log${entry}`;
+          }
+
+          writeFileSync(pmptMdPath, content, 'utf-8');
+        }
+      }
+
+      const entry = createFullSnapshot(pp, summary ? { note: summary } : undefined);
       const changedCount = entry.changedFiles?.length ?? entry.files.length;
 
       return {
@@ -128,6 +157,7 @@ server.tool(
           type: 'text' as const,
           text: [
             `Snapshot v${entry.version} saved (${changedCount} changed, ${entry.files.length - changedCount} unchanged).`,
+            summary ? `Summary: ${summary}` : '',
             '',
             `Files: ${entry.files.join(', ')}`,
             entry.changedFiles ? `Changed: ${entry.changedFiles.join(', ')}` : '',
@@ -254,6 +284,78 @@ server.tool(
           { type: 'text' as const, text: `Diff: v${v1} → ${targetLabel}` },
           { type: 'text' as const, text: formatDiffs(diffs) },
         ],
+      };
+    } catch (error) {
+      return { content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }], isError: true };
+    }
+  },
+);
+
+server.tool(
+  'pmpt_squash',
+  'Remove empty snapshots (no file changes) and renumber remaining versions sequentially. Use this to clean up history when there are snapshots with no actual content changes.',
+  {
+    projectPath: z.string().optional().describe('Project root path. Defaults to cwd.'),
+  },
+  async ({ projectPath }) => {
+    try {
+      const pp = resolveProjectPath(projectPath);
+      assertInitialized(pp);
+
+      const snapshots = getAllSnapshots(pp);
+      if (snapshots.length === 0) {
+        return { content: [{ type: 'text' as const, text: 'No snapshots found.' }] };
+      }
+
+      const emptySnapshots = snapshots.filter(s => s.changedFiles && s.changedFiles.length === 0);
+
+      if (emptySnapshots.length === 0) {
+        return { content: [{ type: 'text' as const, text: 'No empty snapshots found. History is clean.' }] };
+      }
+
+      // Delete empty snapshots
+      const { rmSync, renameSync } = await import('fs');
+      const { basename } = await import('path');
+
+      for (const snap of emptySnapshots) {
+        if (existsSync(snap.snapshotDir)) {
+          rmSync(snap.snapshotDir, { recursive: true });
+        }
+      }
+
+      // Renumber remaining snapshots
+      const historyDir = getHistoryDir(pp);
+      const remaining = getAllSnapshots(pp);
+      for (let i = 0; i < remaining.length; i++) {
+        const snap = remaining[i];
+        const newVersion = i + 1;
+        if (snap.version === newVersion) continue;
+
+        const dirName = basename(snap.snapshotDir);
+        const newDirName = dirName.replace(/^v\d+/, `v${newVersion}`);
+        const newDir = join(historyDir, newDirName);
+        renameSync(snap.snapshotDir, newDir);
+
+        const metaPath = join(newDir, '.meta.json');
+        if (existsSync(metaPath)) {
+          const meta = JSON.parse(readFileSync(metaPath, 'utf-8'));
+          meta.version = newVersion;
+          writeFileSync(metaPath, JSON.stringify(meta, null, 2), 'utf-8');
+        }
+      }
+
+      const finalCount = getAllSnapshots(pp).length;
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: [
+            `Squashed: removed ${emptySnapshots.length} empty snapshot(s).`,
+            `Remaining: ${finalCount} snapshot(s), renumbered v1-v${finalCount}.`,
+            '',
+            `Removed versions: ${emptySnapshots.map(s => `v${s.version}`).join(', ')}`,
+          ].join('\n'),
+        }],
       };
     } catch (error) {
       return { content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }], isError: true };

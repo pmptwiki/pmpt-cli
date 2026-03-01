@@ -78,6 +78,7 @@ Examples:
   $ pmpt diff v1 v2              Compare two versions
   $ pmpt diff v3                 Compare v3 to working copy
   $ pmpt squash v2 v5            Merge versions v2-v5 into v2
+  $ pmpt squash --auto           Auto-remove empty snapshots
   $ pmpt export                  Export as .pmpt file (single JSON)
   $ pmpt import <file.pmpt>      Import from .pmpt file
   $ pmpt login                   Authenticate with pmptwiki
@@ -136,9 +137,11 @@ program
   .action(cmdDiff);
 
 program
-  .command('squash <from> <to> [path]')
-  .description('Squash multiple versions into one (e.g., pmpt squash v2 v5)')
-  .action(cmdSquash);
+  .command('squash [from] [to]')
+  .description('Squash versions: pmpt squash v2 v5  or  pmpt squash --auto')
+  .option('--auto', 'Auto-remove empty snapshots (no file changes)')
+  .option('-p, --path <path>', 'Project path')
+  .action((from, to, opts) => cmdSquash(from, to, opts));
 
 program
   .command('export [path]')
