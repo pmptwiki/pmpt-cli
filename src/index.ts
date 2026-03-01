@@ -51,6 +51,7 @@ import { cmdDiff } from './commands/diff.js';
 import { cmdInternalSeed } from './commands/internal-seed.js';
 import { cmdMcpSetup } from './commands/mcp-setup.js';
 import { trackCommand } from './lib/api.js';
+import { checkForUpdates } from './lib/update-check.js';
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
@@ -62,6 +63,11 @@ const program = new Command();
 program.hook('preAction', (thisCommand, actionCommand) => {
   const commandName = actionCommand?.name() || thisCommand.name();
   trackCommand(commandName);
+});
+
+// Check for updates after command finishes
+program.hook('postAction', () => {
+  checkForUpdates(version);
 });
 
 program
