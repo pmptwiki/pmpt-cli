@@ -15,7 +15,7 @@ import { existsSync, readFileSync, writeFileSync } from 'fs';
 import glob from 'fast-glob';
 import { createRequire } from 'module';
 
-import { isInitialized, loadConfig, getDocsDir, getConfigDir, getHistoryDir } from './lib/config.js';
+import { isInitialized, loadConfig, saveConfig, getDocsDir, getConfigDir, getHistoryDir } from './lib/config.js';
 import { createFullSnapshot, getAllSnapshots, getTrackedFiles, resolveFullSnapshot } from './lib/history.js';
 import { computeQuality, type QualityInput } from './lib/quality.js';
 import { getPlanProgress, savePlanProgress, savePlanDocuments, PLAN_QUESTIONS } from './lib/plan.js';
@@ -788,6 +788,14 @@ server.tool(
         productUrl,
         productUrlType,
       });
+
+      // Save publish state to config so `pmpt update` works
+      if (config) {
+        config.lastPublished = new Date().toISOString();
+        config.lastPublishedSlug = slug;
+        config.lastPublishedVersionCount = snapshots.length;
+        saveConfig(pp, config);
+      }
 
       return {
         content: [{
