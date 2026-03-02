@@ -15,6 +15,7 @@ import { existsSync, readFileSync, writeFileSync } from 'fs';
 import glob from 'fast-glob';
 import { createRequire } from 'module';
 
+import { basename } from 'path';
 import { isInitialized, loadConfig, saveConfig, getDocsDir, getConfigDir, getHistoryDir } from './lib/config.js';
 import { createFullSnapshot, getAllSnapshots, getTrackedFiles, resolveFullSnapshot } from './lib/history.js';
 import { computeQuality, type QualityInput } from './lib/quality.js';
@@ -118,6 +119,28 @@ server.tool(
       const pp = resolveProjectPath(projectPath);
       assertInitialized(pp);
 
+      const docsDir = getDocsDir(pp);
+
+      // Auto-create pmpt.md if missing
+      const pmptMdPath = join(docsDir, 'pmpt.md');
+      if (!existsSync(pmptMdPath)) {
+        const planProgress = getPlanProgress(pp);
+        const config = loadConfig(pp);
+        const name = planProgress?.answers?.projectName || config?.lastPublishedSlug || basename(pp);
+        const skeleton = [
+          `# ${name}`,
+          '',
+          '## Progress',
+          '- Project initialized',
+          '',
+          '## Snapshot Log',
+          '',
+          '## Decisions',
+          '',
+        ].join('\n');
+        writeFileSync(pmptMdPath, skeleton, 'utf-8');
+      }
+
       const tracked = getTrackedFiles(pp);
       if (tracked.length === 0) {
         return { content: [{ type: 'text' as const, text: 'No files to save. Add .md files to .pmpt/docs/ first.' }] };
@@ -125,8 +148,6 @@ server.tool(
 
       // Auto-update pmpt.md with summary before snapshot
       if (summary) {
-        const docsDir = getDocsDir(pp);
-        const pmptMdPath = join(docsDir, 'pmpt.md');
 
         if (existsSync(pmptMdPath)) {
           let content = readFileSync(pmptMdPath, 'utf-8');

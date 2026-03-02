@@ -1,7 +1,7 @@
 import * as p from '@clack/prompts';
-import { existsSync, readFileSync } from 'fs';
-import { resolve } from 'path';
-import { initializeProject, isInitialized } from '../lib/config.js';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { resolve, basename, join } from 'path';
+import { initializeProject, isInitialized, getDocsDir } from '../lib/config.js';
 import { isGitRepo, getGitInfo, formatGitInfo, getCommitCount } from '../lib/git.js';
 import { cmdPlan } from './plan.js';
 import { scanProject, scanResultToAnswers } from '../lib/scanner.js';
@@ -272,6 +272,7 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
         p.log.message('');
         await cmdPlan(projectPath);
       } else {
+        ensureMinimalDocs(projectPath);
         p.outro('Ready! Run `pmpt plan` when you want to start.');
       }
     } else {
@@ -285,6 +286,7 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
         p.log.message('');
         await cmdPlan(projectPath);
       } else {
+        ensureMinimalDocs(projectPath);
         p.outro('Ready! Run `pmpt plan` when you want to start.');
       }
     }
@@ -293,4 +295,25 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
     p.log.error((error as Error).message);
     process.exit(1);
   }
+}
+
+/** Create minimal pmpt.md so progress tracking works from the start */
+function ensureMinimalDocs(projectPath: string): void {
+  const docsDir = getDocsDir(projectPath);
+  const pmptMdPath = join(docsDir, 'pmpt.md');
+  if (existsSync(pmptMdPath)) return;
+
+  const name = basename(projectPath);
+  const skeleton = [
+    `# ${name}`,
+    '',
+    '## Progress',
+    '- Project initialized',
+    '',
+    '## Snapshot Log',
+    '',
+    '## Decisions',
+    '',
+  ].join('\n');
+  writeFileSync(pmptMdPath, skeleton, 'utf-8');
 }

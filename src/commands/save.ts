@@ -1,8 +1,9 @@
 import * as p from '@clack/prompts';
-import { resolve, join } from 'path';
+import { resolve, join, basename } from 'path';
 import { existsSync, statSync, readFileSync, writeFileSync } from 'fs';
-import { isInitialized, getDocsDir } from '../lib/config.js';
+import { isInitialized, getDocsDir, loadConfig } from '../lib/config.js';
 import { createFullSnapshot, getTrackedFiles, getAllSnapshots } from '../lib/history.js';
+import { getPlanProgress } from '../lib/plan.js';
 
 export async function cmdSave(fileOrPath?: string): Promise<void> {
   const projectPath = fileOrPath && existsSync(fileOrPath) && statSync(fileOrPath).isDirectory()
@@ -25,6 +26,27 @@ export async function cmdSave(fileOrPath?: string): Promise<void> {
     p.log.info('Start with `pmpt plan` or add MD files to the docs folder.');
     p.outro('');
     return;
+  }
+
+  // Auto-create pmpt.md if missing
+  const pmptMdPath = join(docsDir, 'pmpt.md');
+  if (!existsSync(pmptMdPath)) {
+    const planProgress = getPlanProgress(projectPath);
+    const config = loadConfig(projectPath);
+    const name = planProgress?.answers?.projectName || config?.lastPublishedSlug || basename(projectPath);
+    const skeleton = [
+      `# ${name}`,
+      '',
+      '## Progress',
+      '- Project initialized',
+      '',
+      '## Snapshot Log',
+      '',
+      '## Decisions',
+      '',
+    ].join('\n');
+    writeFileSync(pmptMdPath, skeleton, 'utf-8');
+    p.log.info('Created pmpt.md (project tracking document)');
   }
 
   // Ask for summary
