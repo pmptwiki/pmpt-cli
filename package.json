@@ -1,6 +1,6 @@
 {
   "name": "pmpt-cli",
-  "version": "1.14.9",
+  "version": "1.14.10",
   "description": "Record and share your AI-driven product development journey",
   "type": "module",
   "bin": {
