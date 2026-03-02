@@ -104,6 +104,7 @@ The generated prompt is **automatically copied to your clipboard**. Just paste i
 | `pmpt export` | Export project as `.pmpt` file |
 | `pmpt import <file>` | Import from `.pmpt` file |
 | `pmpt recover` | Recover damaged pmpt.md via AI-generated prompt |
+| `pmpt mcp-setup` | Auto-configure MCP server for your AI tool |
 | `pmpt -v` | Show current CLI version |
 
 ### Platform
@@ -113,8 +114,9 @@ The generated prompt is **automatically copied to your clipboard**. Just paste i
 | `pmpt login` | Authenticate via GitHub (one-time) |
 | `pmpt publish` | Publish your project (requires quality score ≥ 40) |
 | `pmpt update` | Quick re-publish: update content without changing metadata |
-| `pmpt edit` | Edit published project metadata (description, tags, category) |
+| `pmpt edit` | Edit published project metadata (description, tags, category, visibility, related projects, product URL) |
 | `pmpt unpublish` | Remove a published project from pmptwiki |
+| `pmpt graduate` | Graduate a project — archive with badge, move to Hall of Fame |
 | `pmpt clone <slug>` | Clone and reproduce someone's project |
 | `pmpt explore` | Open pmptwiki.com/explore in your browser |
 
@@ -133,7 +135,7 @@ pmpt includes a built-in [MCP](https://modelcontextprotocol.io) server so AI too
 `pmpt-mcp` is included when you install pmpt — no separate installation needed.
 
 ```bash
-npm install -g pmpt   # pmpt + pmpt-mcp both installed
+npm install -g pmpt-cli   # pmpt + pmpt-mcp both installed
 ```
 
 #### Automatic Setup (Recommended)
@@ -164,11 +166,18 @@ Add to your `.mcp.json` (or IDE MCP config):
 
 | Tool | Description |
 |------|-------------|
-| `pmpt_save` | Save a snapshot after completing features, fixes, or milestones |
+| `pmpt_plan_questions` | Get planning questions to ask the user conversationally |
+| `pmpt_plan` | Submit answers to generate AI prompt and project docs |
+| `pmpt_save` | Save a snapshot with detailed summary |
+| `pmpt_update_doc` | Check off features, add progress notes, backfill summaries |
+| `pmpt_log_decision` | Record architectural/technical decisions with reasoning |
+| `pmpt_read_context` | Read full project context (plan, docs, history, quality) |
 | `pmpt_status` | Check tracked files, snapshot count, and quality score |
 | `pmpt_history` | View version history with git commit info |
 | `pmpt_diff` | Compare two versions, or a version against working copy |
+| `pmpt_edit_plan` | Edit plan fields — regenerates plan.md and pmpt.ai.md |
 | `pmpt_quality` | Check quality score and publish readiness |
+| `pmpt_publish` | Publish project to pmptwiki.com |
 
 All tools accept an optional `projectPath` parameter (defaults to cwd).
 
