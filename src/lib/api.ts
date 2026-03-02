@@ -13,6 +13,7 @@ export interface PublishRequest {
   category?: string;
   productUrl?: string;
   productUrlType?: string;
+  unlisted?: boolean;
 }
 
 export interface PublishResponse {
@@ -39,6 +40,7 @@ export interface ProjectEntry {
   graduated?: boolean;
   graduatedAt?: string;
   graduationNote?: string;
+  unlisted?: boolean;
 }
 
 export interface ProjectIndex {
@@ -125,6 +127,7 @@ export interface EditRequest {
   category?: string;
   productUrl?: string;
   productUrlType?: string;
+  unlisted?: boolean;
 }
 
 export async function editProject(token: string, slug: string, data: EditRequest): Promise<void> {

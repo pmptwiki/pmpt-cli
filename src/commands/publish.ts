@@ -356,6 +356,7 @@ export async function cmdPublish(path?: string, options?: PublishOptions): Promi
         if (p.isCancel(productUrlInput)) { p.cancel('Cancelled'); process.exit(0); }
         productUrl = productUrlInput as string;
       }
+
     }
   }
 
