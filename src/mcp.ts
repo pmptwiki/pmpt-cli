@@ -18,7 +18,7 @@ import { createRequire } from 'module';
 import { isInitialized, loadConfig, saveConfig, getDocsDir, getConfigDir, getHistoryDir } from './lib/config.js';
 import { createFullSnapshot, getAllSnapshots, getTrackedFiles, resolveFullSnapshot } from './lib/history.js';
 import { computeQuality, type QualityInput } from './lib/quality.js';
-import { getPlanProgress, savePlanProgress, savePlanDocuments, PLAN_QUESTIONS } from './lib/plan.js';
+import { getPlanProgress, savePlanProgress, savePlanDocuments, PLAN_QUESTIONS, generatePlanDocument, generateAIPrompt } from './lib/plan.js';
 import { isGitRepo } from './lib/git.js';
 import { diffSnapshots, type FileDiff } from './lib/diff.js';
 import { loadAuth } from './lib/auth.js';
@@ -815,6 +815,139 @@ server.tool(
             `Download: ${result.downloadUrl}`,
             `Slug: ${slug}`,
             `Author: @${auth.username}`,
+          ].join('\n'),
+        }],
+      };
+    } catch (error) {
+      return { content: [{ type: 'text' as const, text: `Error: ${error instanceof Error ? error.message : String(error)}` }], isError: true };
+    }
+  },
+);
+
+server.tool(
+  'pmpt_edit_plan',
+  'Edit existing plan fields (productIdea, coreFeatures, techStack, additionalContext, projectName). Use this to update plan content — e.g., translate productIdea to English, add new features, change tech stack. Only provided fields are updated; others stay unchanged. Regenerates plan.md and pmpt.ai.md automatically. pmpt.md progress/log sections are preserved — only the plan-derived sections (Product Idea, Features, Tech Stack, Additional Context) are updated.',
+  {
+    projectPath: z.string().optional().describe('Project root path. Defaults to cwd.'),
+    projectName: z.string().optional().describe('New project name.'),
+    productIdea: z.string().optional().describe('New product idea description.'),
+    coreFeatures: z.string().optional().describe('New core features (comma or semicolon separated).'),
+    techStack: z.string().optional().describe('New tech stack preference.'),
+    additionalContext: z.string().optional().describe('New additional context.'),
+  },
+  async ({ projectPath, projectName, productIdea, coreFeatures, techStack, additionalContext }) => {
+    try {
+      const pp = resolveProjectPath(projectPath);
+      assertInitialized(pp);
+
+      const progress = getPlanProgress(pp);
+      if (!progress?.completed || !progress.answers) {
+        return { content: [{ type: 'text' as const, text: 'No plan found. Run pmpt_plan first to create a plan.' }], isError: true };
+      }
+
+      // Track what changed
+      const changes: string[] = [];
+      const answers = { ...progress.answers };
+
+      if (projectName !== undefined) { answers.projectName = projectName; changes.push(`projectName → "${projectName}"`); }
+      if (productIdea !== undefined) { answers.productIdea = productIdea; changes.push(`productIdea updated`); }
+      if (coreFeatures !== undefined) { answers.coreFeatures = coreFeatures; changes.push(`coreFeatures updated`); }
+      if (techStack !== undefined) { answers.techStack = techStack; changes.push(`techStack → "${techStack}"`); }
+      if (additionalContext !== undefined) { answers.additionalContext = additionalContext; changes.push(`additionalContext updated`); }
+
+      if (changes.length === 0) {
+        return { content: [{ type: 'text' as const, text: 'No fields provided. Pass at least one field to update.' }] };
+      }
+
+      // Update plan-progress.json
+      savePlanProgress(pp, { ...progress, answers });
+
+      // Regenerate plan.md and pmpt.ai.md
+      const docsDir = getDocsDir(pp);
+      const planPath = join(docsDir, 'plan.md');
+      writeFileSync(planPath, generatePlanDocument(answers), 'utf-8');
+
+      const aiMdPath = join(docsDir, 'pmpt.ai.md');
+      writeFileSync(aiMdPath, generateAIPrompt(answers), 'utf-8');
+
+      // Update pmpt.md plan-derived sections (preserve progress, log, decisions)
+      const pmptMdPath = join(docsDir, 'pmpt.md');
+      if (existsSync(pmptMdPath)) {
+        let content = readFileSync(pmptMdPath, 'utf-8');
+
+        // Update title (first # heading)
+        content = content.replace(/^# .+$/m, `# ${answers.projectName}`);
+
+        // Update Product Idea section
+        const ideaRegex = /## Product Idea\n[\s\S]*?(?=\n## )/;
+        if (ideaRegex.test(content)) {
+          content = content.replace(ideaRegex, `## Product Idea\n${answers.productIdea}\n`);
+        }
+
+        // Update Features section (only unchecked items get replaced; checked items are preserved)
+        const featuresRegex = /## Features\n[\s\S]*?(?=\n## )/;
+        if (featuresRegex.test(content)) {
+          const existingMatch = content.match(featuresRegex);
+          if (existingMatch) {
+            // Extract already-checked features
+            const checked = existingMatch[0]
+              .split('\n')
+              .filter(line => line.startsWith('- [x]'))
+              .join('\n');
+
+            const newFeatures = answers.coreFeatures
+              .split(/[,;\n]/)
+              .map((f: string) => f.trim())
+              .filter((f: string) => f)
+              .map((f: string) => `- [ ] ${f}`)
+              .join('\n');
+
+            const featuresSection = checked
+              ? `## Features\n${checked}\n${newFeatures}\n`
+              : `## Features\n${newFeatures}\n`;
+            content = content.replace(featuresRegex, featuresSection);
+          }
+        }
+
+        // Update Tech Stack section
+        if (answers.techStack) {
+          const techRegex = /## Tech Stack\n[\s\S]*?(?=\n## )/;
+          if (techRegex.test(content)) {
+            content = content.replace(techRegex, `## Tech Stack\n${answers.techStack}\n`);
+          } else {
+            // Insert before Progress section
+            const progressIdx = content.indexOf('\n## Progress');
+            if (progressIdx !== -1) {
+              content = content.slice(0, progressIdx) + `\n## Tech Stack\n${answers.techStack}\n` + content.slice(progressIdx);
+            }
+          }
+        }
+
+        // Update Additional Context section
+        if (answers.additionalContext) {
+          const ctxRegex = /## Additional Context\n[\s\S]*?(?=\n## )/;
+          if (ctxRegex.test(content)) {
+            content = content.replace(ctxRegex, `## Additional Context\n${answers.additionalContext}\n`);
+          } else {
+            const ideaEnd = content.indexOf('\n## ', content.indexOf('## Product Idea') + 1);
+            if (ideaEnd !== -1) {
+              content = content.slice(0, ideaEnd) + `\n## Additional Context\n${answers.additionalContext}\n` + content.slice(ideaEnd);
+            }
+          }
+        }
+
+        writeFileSync(pmptMdPath, content, 'utf-8');
+      }
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: [
+            `Plan updated:`,
+            ...changes.map(c => `  - ${c}`),
+            '',
+            'Regenerated: plan.md, pmpt.ai.md, pmpt.md (progress preserved)',
+            'Run pmpt_save to snapshot this change.',
           ].join('\n'),
         }],
       };
