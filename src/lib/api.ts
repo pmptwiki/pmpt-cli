@@ -41,6 +41,7 @@ export interface ProjectEntry {
   graduatedAt?: string;
   graduationNote?: string;
   unlisted?: boolean;
+  related?: string[];
 }
 
 export interface ProjectIndex {
@@ -128,6 +129,7 @@ export interface EditRequest {
   productUrl?: string;
   productUrlType?: string;
   unlisted?: boolean;
+  related?: string[];
 }
 
 export async function editProject(token: string, slug: string, data: EditRequest): Promise<void> {

@@ -63,6 +63,7 @@ export async function cmdEdit(): Promise<void> {
       `Category: ${categoryLabel}`,
       project.productUrl ? `Product: ${project.productUrl}` : 'Product: (none)',
       `Visibility: ${project.unlisted ? 'Unlisted' : 'Listed'}`,
+      `Related: ${project.related?.length ? project.related.join(', ') : '(none)'}`,
     ].join('\n'),
     'Current Settings',
   );
@@ -76,6 +77,7 @@ export async function cmdEdit(): Promise<void> {
       { value: 'category', label: 'Category' },
       { value: 'productUrl', label: 'Product Link' },
       { value: 'unlisted', label: 'Visibility (listed/unlisted)' },
+      { value: 'related', label: 'Related Projects' },
     ],
   });
   if (p.isCancel(fields)) { p.cancel('Cancelled'); process.exit(0); }
@@ -162,6 +164,17 @@ export async function cmdEdit(): Promise<void> {
     });
     if (p.isCancel(v)) { p.cancel('Cancelled'); process.exit(0); }
     updates.unlisted = !!v;
+  }
+
+  if (selected.has('related')) {
+    const v = await p.text({
+      message: 'Related project slugs (comma-separated):',
+      defaultValue: project.related?.join(', ') || '',
+      placeholder: 'e.g., my-api, my-cli, my-docs',
+    });
+    if (p.isCancel(v)) { p.cancel('Cancelled'); process.exit(0); }
+    const slugs = (v as string).split(',').map((s) => s.trim()).filter(Boolean);
+    updates.related = slugs;
   }
 
   const s2 = p.spinner();
