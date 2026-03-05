@@ -137,6 +137,10 @@ server.tool(
           '',
           '## Decisions',
           '',
+          '## Constraints',
+          '',
+          '## Lessons',
+          '',
         ].join('\n');
         writeFileSync(pmptMdPath, skeleton, 'utf-8');
       }

@@ -314,6 +314,10 @@ function ensureMinimalDocs(projectPath: string): void {
     '',
     '## Decisions',
     '',
+    '## Constraints',
+    '',
+    '## Lessons',
+    '',
   ].join('\n');
   writeFileSync(pmptMdPath, skeleton, 'utf-8');
 }

@@ -128,6 +128,20 @@ After completing each feature above:
 1. Mark the feature done in \`.pmpt/docs/pmpt.md\` (change \`- [ ]\` to \`- [x]\`)
 2. Add a brief note to the Snapshot Log section
 3. Run \`pmpt save\` in terminal
+
+### What to Record in pmpt.md
+
+**## Decisions** — Record WHY, not just WHAT. Include the data or observation that led to the decision.
+- Bad: "Set minimum description length to 150 chars"
+- Good: "Set minimum description length to 150 chars (50-char threshold caused 60% low-quality entries)"
+
+**## Constraints** — Record platform/library limitations discovered during development.
+- Examples: DB quirks, API limits, framework restrictions, version incompatibilities
+- Format: \`- [Platform]: what doesn't work → workaround used\`
+
+**## Lessons** — Record anti-patterns and "we tried X, it broke because Y" discoveries.
+- Examples: wrong deletion order causing FK errors, caching issues, race conditions
+- Format: \`- [What failed] → [Root cause] → [Fix applied]\`
 `;
 }
 
@@ -164,6 +178,12 @@ ${techSection}
 ## Snapshot Log
 ### v1 - Initial Setup
 - Project initialized with pmpt
+
+## Decisions
+
+## Constraints
+
+## Lessons
 
 ---
 *This document tracks your project progress. Update it as you build.*
