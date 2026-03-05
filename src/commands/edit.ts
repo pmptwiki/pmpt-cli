@@ -58,27 +58,30 @@ export async function cmdEdit(): Promise<void> {
 
   p.note(
     [
+      project.graduated ? '🎓 Graduated — only Product URL can be updated.' : null,
       `Description: ${project.description || '(none)'}`,
       `Tags: ${project.tags?.length ? project.tags.join(', ') : '(none)'}`,
       `Category: ${categoryLabel}`,
       project.productUrl ? `Product: ${project.productUrl}` : 'Product: (none)',
       `Visibility: ${project.unlisted ? 'Unlisted' : 'Listed'}`,
       `Related: ${project.related?.length ? project.related.join(', ') : '(none)'}`,
-    ].join('\n'),
+    ].filter(Boolean).join('\n'),
     'Current Settings',
   );
 
   // Pick fields to edit
   const fields = await p.multiselect({
     message: 'What do you want to edit?',
-    options: [
-      { value: 'description', label: 'Description' },
-      { value: 'tags', label: 'Tags' },
-      { value: 'category', label: 'Category' },
-      { value: 'productUrl', label: 'Product Link' },
-      { value: 'unlisted', label: 'Visibility (listed/unlisted)' },
-      { value: 'related', label: 'Related Projects' },
-    ],
+    options: project.graduated
+      ? [{ value: 'productUrl', label: 'Product Link' }]
+      : [
+          { value: 'description', label: 'Description' },
+          { value: 'tags', label: 'Tags' },
+          { value: 'category', label: 'Category' },
+          { value: 'productUrl', label: 'Product Link' },
+          { value: 'unlisted', label: 'Visibility (listed/unlisted)' },
+          { value: 'related', label: 'Related Projects' },
+        ],
   });
   if (p.isCancel(fields)) { p.cancel('Cancelled'); process.exit(0); }
 
