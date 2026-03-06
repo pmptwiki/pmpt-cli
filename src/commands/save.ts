@@ -60,7 +60,7 @@ export async function cmdSave(fileOrPath?: string): Promise<void> {
     process.exit(0);
   }
 
-  const note = (summary as string).trim() || undefined;
+  const note = typeof summary === 'string' ? summary.trim() || undefined : undefined;
 
   // Write summary to pmpt.md Snapshot Log before snapshot
   if (note) {
