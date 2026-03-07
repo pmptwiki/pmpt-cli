@@ -1,7 +1,7 @@
 import * as p from '@clack/prompts';
 import { join, dirname, resolve, relative, sep } from 'path';
 import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
-import { isInitialized, getConfigDir, getHistoryDir, getDocsDir, initializeProject, ensurePmptClaudeMd } from '../lib/config.js';
+import { isInitialized, getConfigDir, getHistoryDir, getDocsDir, initializeProject, ensurePmptClaudeMd, ensureMcpJson } from '../lib/config.js';
 import { validatePmptFile, isSafeFilename, type PmptFile } from '../lib/pmptFile.js';
 import { fetchPmptFile, trackClone } from '../lib/api.js';
 import { copyToClipboard } from '../lib/clipboard.js';
@@ -133,8 +133,9 @@ export async function cmdClone(slug: string): Promise<void> {
   // History is not restored — user's journey starts fresh from v1.
   // The version summary is embedded in pmpt.ai.md for AI reference.
 
-  // Add pmpt MCP instructions to CLAUDE.md so Claude Code activates MCP automatically
+  // Add pmpt MCP instructions to CLAUDE.md and register .mcp.json for Claude Code
   ensurePmptClaudeMd(projectPath);
+  ensureMcpJson(projectPath);
 
   if (pmptData.docs) {
     restoreDocs(docsDir, pmptData.docs);

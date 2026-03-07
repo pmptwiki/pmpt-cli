@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { join, dirname } from 'path';
+import { execSync } from 'child_process';
 
 export interface ProjectConfig {
   projectPath: string;
@@ -130,6 +131,49 @@ export function ensurePmptClaudeMd(projectPath: string): void {
   } else {
     writeFileSync(claudeMdPath, '# Project Instructions\n' + PMPT_CLAUDE_SECTION, 'utf-8');
   }
+}
+
+function detectPmptMcpPath(): string | null {
+  // Strategy 1: sibling to the current pmpt binary
+  try {
+    const pmptBin = process.argv[1];
+    const siblingPath = join(dirname(pmptBin), 'pmpt-mcp');
+    if (existsSync(siblingPath)) return siblingPath;
+  } catch { /* skip */ }
+
+  // Strategy 2: which / where command
+  try {
+    const cmd = process.platform === 'win32' ? 'where pmpt-mcp' : 'which pmpt-mcp';
+    const result = execSync(cmd, { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+    const firstLine = result.split('\n')[0].trim();
+    if (firstLine && existsSync(firstLine)) return firstLine;
+  } catch { /* not in PATH */ }
+
+  return null;
+}
+
+/**
+ * Create or update .mcp.json in the project root to register the pmpt MCP server.
+ * Skips silently if pmpt-mcp binary cannot be found.
+ */
+export function ensureMcpJson(projectPath: string): void {
+  const mcpJsonPath = join(projectPath, '.mcp.json');
+  const mcpPath = detectPmptMcpPath();
+  if (!mcpPath) return; // can't detect binary — skip silently
+
+  let config: Record<string, unknown> = {};
+  if (existsSync(mcpJsonPath)) {
+    try { config = JSON.parse(readFileSync(mcpJsonPath, 'utf-8')); } catch { config = {}; }
+    // Already registered — don't overwrite
+    const servers = config.mcpServers as Record<string, unknown> | undefined;
+    if (servers?.pmpt) return;
+  }
+
+  if (!config.mcpServers || typeof config.mcpServers !== 'object') {
+    config.mcpServers = {};
+  }
+  (config.mcpServers as Record<string, unknown>).pmpt = { command: mcpPath };
+  writeFileSync(mcpJsonPath, JSON.stringify(config, null, 2) + '\n', 'utf-8');
 }
 
 const PMPT_README = `# .pmpt — Your Project's Development Journal

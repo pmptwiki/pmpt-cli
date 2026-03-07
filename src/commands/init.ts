@@ -1,7 +1,7 @@
 import * as p from '@clack/prompts';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { resolve, basename, join } from 'path';
-import { initializeProject, isInitialized, getDocsDir, ensurePmptClaudeMd } from '../lib/config.js';
+import { initializeProject, isInitialized, getDocsDir, ensurePmptClaudeMd, ensureMcpJson } from '../lib/config.js';
 import { isGitRepo, getGitInfo, formatGitInfo, getCommitCount } from '../lib/git.js';
 import { cmdPlan } from './plan.js';
 import { scanProject, scanResultToAnswers } from '../lib/scanner.js';
@@ -118,8 +118,9 @@ export async function cmdInit(path?: string, options?: InitOptions): Promise<voi
     });
     s.stop('Initialized');
 
-    // Add pmpt MCP instructions to CLAUDE.md so Claude Code activates MCP automatically
+    // Add pmpt MCP instructions to CLAUDE.md and register .mcp.json for Claude Code
     ensurePmptClaudeMd(projectPath);
+    ensureMcpJson(projectPath);
 
     // Build folder structure display
     const notes = [
