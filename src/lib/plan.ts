@@ -121,13 +121,21 @@ ${workflowSteps}
 - When requirements change or new decisions are made
 
 Keep the Progress and Snapshot Log sections in pmpt.md up to date.
-After significant milestones, run \`pmpt save\` to create a snapshot.
+After significant milestones, save a snapshot using the method below.
+
+### Saving Snapshots
+
+**If the pmpt MCP tool is available** (Claude Code, Cursor with MCP configured):
+Call the \`pmpt_save\` MCP tool directly with a descriptive summary. Do this proactively after milestones — do not wait for the user to ask.
+
+**Otherwise:**
+Run \`pmpt save\` in the terminal.
 
 ### Per-Feature Checklist
 After completing each feature above:
 1. Mark the feature done in \`.pmpt/docs/pmpt.md\` (change \`- [ ]\` to \`- [x]\`)
 2. Add a brief note to the Snapshot Log section
-3. Run \`pmpt save\` in terminal
+3. Save a snapshot (MCP tool or \`pmpt save\`)
 
 ### What to Record in pmpt.md
 
