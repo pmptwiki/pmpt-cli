@@ -1,6 +1,6 @@
 import * as p from '@clack/prompts';
 import { join, dirname, resolve, relative, sep } from 'path';
-import { existsSync, mkdirSync, writeFileSync, readFileSync, readdirSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
 import { isInitialized, getConfigDir, getHistoryDir, getDocsDir, initializeProject } from '../lib/config.js';
 import { validatePmptFile, isSafeFilename, type PmptFile } from '../lib/pmptFile.js';
 import { fetchPmptFile, trackClone } from '../lib/api.js';
@@ -130,7 +130,8 @@ export async function cmdClone(slug: string): Promise<void> {
   const historyDir = getHistoryDir(projectPath);
   const docsDir = getDocsDir(projectPath);
 
-  restoreHistory(historyDir, pmptData.history);
+  // History is not restored — user's journey starts fresh from v1.
+  // The version summary is embedded in pmpt.ai.md for AI reference.
 
   if (pmptData.docs) {
     restoreDocs(docsDir, pmptData.docs);
@@ -207,11 +208,6 @@ export async function cmdClone(slug: string): Promise<void> {
     );
   }
 
-  let versionCount = 0;
-  if (existsSync(historyDir)) {
-    versionCount = readdirSync(historyDir).filter((d) => d.startsWith('v')).length;
-  }
-
   importSpinner.stop('Restore complete!');
 
   // Track clone event (fire-and-forget)
@@ -220,7 +216,8 @@ export async function cmdClone(slug: string): Promise<void> {
   p.note(
     [
       `Project: ${pmptData.meta.projectName}`,
-      `Versions: ${versionCount}`,
+      `Cloned from: @${pmptData.meta.author || 'unknown'} (${pmptData.history.length} versions)`,
+      `Your history: starts fresh from v1`,
       `Location: ${pmptDir}`,
     ].join('\n'),
     'Clone Summary'
