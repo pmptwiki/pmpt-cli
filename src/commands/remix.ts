@@ -91,12 +91,24 @@ ${contextSection}${techSection}
 
 ## Instructions for AI
 
-This is a **remix** of an existing project. Build my version based on the differentiation above.
+This is a **remix** of an existing project. Before building anything, do the following:
 
-1. Read the original project below to understand the structure and approach.
-2. Build MY version — same core concept, but with my differentiation applied throughout.
-3. Do NOT copy content verbatim. Adapt everything to fit my context.
-4. Start with core features first, then iterate.
+**Step 1 — Understand & Clarify (do this first)**
+
+Read my "My Version" section above and the original project below carefully, then ask me clarifying questions. Specifically, identify:
+- Anything in my differentiation that is ambiguous or unclear
+- Information that would be needed to build my version but is not provided
+- Assumptions you would have to make — ask instead of assuming
+- Any conflict between my twist and the original that needs resolution
+
+Ask all your questions in a single message. Wait for my answers before proceeding.
+
+**Step 2 — Build**
+
+After I answer your questions, build MY version based on the differentiation and my answers.
+- Same core concept as the original, but with my differentiation applied throughout
+- Do NOT copy content verbatim. Adapt everything to fit my context
+- Start with core features first, then iterate
 
 ### Documentation Rule
 
