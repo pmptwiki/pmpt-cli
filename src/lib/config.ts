@@ -98,6 +98,40 @@ export function saveConfig(projectPath: string, config: ProjectConfig): void {
   writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
 }
 
+const PMPT_CLAUDE_SECTION = `
+<!-- pmpt -->
+## pmpt MCP Tools
+
+This project uses [pmpt](https://pmptwiki.com) to track development progress.
+
+**If pmpt MCP is available in this session**, use these tools proactively — do not wait for the user to ask:
+- \`mcp__pmpt__pmpt_save\` — save a snapshot after milestones (always include a \`summary\`)
+- \`mcp__pmpt__pmpt_status\` — check project status
+- \`mcp__pmpt__pmpt_read_context\` — read project context at session start
+
+Save after: feature completion, architecture decisions, bug fixes, or any significant progress.
+
+If pmpt MCP is not available, run \`pmpt save\` in terminal instead.
+<!-- /pmpt -->
+`;
+
+/**
+ * Add pmpt MCP instructions to CLAUDE.md in the project root.
+ * Creates the file if it doesn't exist; appends the section if not already present.
+ */
+export function ensurePmptClaudeMd(projectPath: string): void {
+  const claudeMdPath = join(projectPath, 'CLAUDE.md');
+  const marker = '<!-- pmpt -->';
+
+  if (existsSync(claudeMdPath)) {
+    const content = readFileSync(claudeMdPath, 'utf-8');
+    if (content.includes(marker)) return; // already has pmpt section
+    writeFileSync(claudeMdPath, content.trimEnd() + '\n' + PMPT_CLAUDE_SECTION, 'utf-8');
+  } else {
+    writeFileSync(claudeMdPath, '# Project Instructions\n' + PMPT_CLAUDE_SECTION, 'utf-8');
+  }
+}
+
 const PMPT_README = `# .pmpt — Your Project's Development Journal
 
 This folder is managed by [pmpt](https://pmptwiki.com). It records your product development journey with AI.
