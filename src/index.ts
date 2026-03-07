@@ -45,6 +45,7 @@ import { cmdEdit } from './commands/edit.js';
 import { cmdUnpublish } from './commands/unpublish.js';
 import { cmdGraduate } from './commands/graduate.js';
 import { cmdClone } from './commands/clone.js';
+import { cmdRemix } from './commands/remix.js';
 import { cmdExplore } from './commands/browse.js';
 import { cmdRecover } from './commands/recover.js';
 import { cmdDiff } from './commands/diff.js';
@@ -225,6 +226,11 @@ program
   .command('clone <slug>')
   .description('Clone a project from pmptwiki platform')
   .action(cmdClone);
+
+program
+  .command('remix')
+  .description('Remix a cloned project — customize it with your own twist')
+  .action(cmdRemix);
 
 program
   .command('explore')
