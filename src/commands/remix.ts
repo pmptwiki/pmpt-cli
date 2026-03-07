@@ -117,9 +117,13 @@ When you make progress, update \`.pmpt/docs/pmpt.md\`:
 - When a feature is implemented (mark as done)
 - When a development phase is completed
 
-Keep the Snapshot Log up to date. After milestones, save a snapshot:
-- **If pmpt MCP tool is available** (Claude Code, Cursor with MCP): call \`pmpt_save\` directly with a descriptive summary. Do this proactively — do not wait for the user to ask.
-- **Otherwise**: run \`pmpt save\` in terminal.
+Keep the Snapshot Log up to date. **Always save proactively after milestones — do not wait for the user to ask.**
+
+Try the pmpt MCP tool first:
+- Claude Code: call \`mcp__pmpt__pmpt_save\` with a descriptive \`summary\`
+- Other MCP clients: call \`pmpt_save\` with a descriptive \`summary\`
+
+If no MCP tool is available, run \`pmpt save\` in terminal.
 
 ---
 

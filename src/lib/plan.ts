@@ -125,17 +125,19 @@ After significant milestones, save a snapshot using the method below.
 
 ### Saving Snapshots
 
-**If the pmpt MCP tool is available** (Claude Code, Cursor with MCP configured):
-Call the \`pmpt_save\` MCP tool directly with a descriptive summary. Do this proactively after milestones — do not wait for the user to ask.
+**Always save proactively after milestones — do not wait for the user to ask.**
 
-**Otherwise:**
-Run \`pmpt save\` in the terminal.
+Try the pmpt MCP tool first:
+- Claude Code: call \`mcp__pmpt__pmpt_save\` with a descriptive \`summary\`
+- Other MCP clients: call \`pmpt_save\` with a descriptive \`summary\`
+
+If no MCP tool is available, run \`pmpt save\` in the terminal.
 
 ### Per-Feature Checklist
 After completing each feature above:
 1. Mark the feature done in \`.pmpt/docs/pmpt.md\` (change \`- [ ]\` to \`- [x]\`)
 2. Add a brief note to the Snapshot Log section
-3. Save a snapshot (MCP tool or \`pmpt save\`)
+3. Call \`mcp__pmpt__pmpt_save\` (or \`pmpt save\` in terminal) with a summary
 
 ### What to Record in pmpt.md
 
