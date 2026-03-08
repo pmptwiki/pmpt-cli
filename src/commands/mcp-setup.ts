@@ -65,14 +65,15 @@ function isJsonConfigured(configPath: string): boolean {
 }
 
 function configureClaudeCode(mcpBinaryPath: string): void {
-  // Remove existing entry first (ignore errors if not found)
-  try {
-    execSync('claude mcp remove pmpt', { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
-  } catch {
-    // not configured yet — that's fine
+  // Remove existing entry at any scope first (ignore errors if not found)
+  for (const scope of ['user', 'local', 'project']) {
+    try {
+      execSync(`claude mcp remove --scope ${scope} pmpt`, { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
+    } catch { /* not configured at this scope */ }
   }
+  // Register at user scope so it works across all projects
   execSync(
-    `claude mcp add --transport stdio pmpt -- "${mcpBinaryPath}"`,
+    `claude mcp add --scope user --transport stdio pmpt -- "${mcpBinaryPath}"`,
     { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] },
   );
 }
