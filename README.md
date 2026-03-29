@@ -34,6 +34,10 @@ npm install -g pmpt-cli
 
 ---
 
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/pmptwiki-pmpt-cli).
+
 ## Quick Start
 
 ```bash
